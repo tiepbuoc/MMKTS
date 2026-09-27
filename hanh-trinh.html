@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hành trình công dân số</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="site">
+  <div class="nav-row">
+    <a class="brand" href="index.html">Hành trình công dân số</a>
+    <ul class="nav-links">
+      <li><a href="index.html">Trang chủ</a></li>
+      <li><a href="hanh-trinh.html" class="active">Hành trình &amp; Chatbot</a></li>
+      <li><a href="emo-connect.html">Emo-Connect</a></li>
+      <li><a href="mindful-chain.html">Mindful Chain</a></li>
+    </ul>
+  </div>
+</header>
+
+<section class="hero" style="padding-bottom:36px;">
+  <div class="container">
+    <div class="eyebrow">Chặng 1 — Hiểu về mệt mỏi kỹ thuật số</div>
+    <h1>Kho kiến thức</h1>
+    <p class="lede">Đọc qua các mục dưới đây trước khi làm bài tự đánh giá.</p>
+  </div>
+</section>
+
+<section class="container" style="padding: 8px 24px 48px;">
+  <details class="kb" open>
+    <summary>Lợi ích của công nghệ</summary>
+    <p>Thiết bị số hỗ trợ học tập, sáng tạo và kết nối — tra cứu kiến thức nhanh, học online, giữ liên lạc với bạn bè và gia đình. Vấn đề không nằm ở bản thân công nghệ, mà ở cách và thời lượng chúng ta sử dụng nó.</p>
+  </details>
+  <details class="kb">
+    <summary>Biểu hiện mệt mỏi kỹ thuật số</summary>
+    <p><strong>Thể chất:</strong> mỏi mắt, đau đầu, đau cổ vai gáy, rối loạn giấc ngủ.<br>
+    <strong>Nhận thức:</strong> khó tập trung, suy giảm trí nhớ ngắn hạn.<br>
+    <strong>Cảm xúc:</strong> căng thẳng, cáu gắt, mất hứng thú với hoạt động khác.<br>
+    <strong>Hành vi:</strong> dùng thiết bị liên tục, khó kiểm soát thời gian sử dụng.</p>
+  </details>
+  <details class="kb">
+    <summary>Các yếu tố nguy cơ</summary>
+    <p>Sử dụng thiết bị liên tục không nghỉ, đa nhiệm số (vừa học vừa nhắn tin), lạm dụng mạng xã hội và trò chơi điện tử, và dùng thiết bị ngay trước giờ ngủ.</p>
+  </details>
+  <details class="kb">
+    <summary>Nguyên tắc sử dụng cân bằng</summary>
+    <p>Đặt mục đích rõ ràng trước khi mở thiết bị, nghỉ ngắn giữa các phiên sử dụng, tắt thông báo không cần thiết, và dành thời gian offline mỗi ngày.</p>
+  </details>
+</section>
+
+<section class="container" style="padding-bottom:56px;">
+  <div class="eyebrow">Chặng 2 — Tự đánh giá</div>
+  <h2>Bài kiểm tra mức độ mệt mỏi kỹ thuật số</h2>
+  <p style="color:var(--ink-soft)">Với mỗi câu, chọn mức độ đúng nhất với bạn trong 7 ngày qua (1 = Hầu như không, 5 = Rất thường xuyên).</p>
+
+  <form id="quizForm">
+    <fieldset id="quizItems"></fieldset>
+    <button type="submit" class="btn btn-primary">Xem kết quả</button>
+  </form>
+
+  <div id="quizResult" style="display:none; margin-top:28px;">
+    <h3>Kết quả của bạn</h3>
+    <p>Điểm trung bình: <strong id="scoreVal"></strong> — <span id="riskBadge" class="risk-badge"></span></p>
+    <p class="note">Đây là công cụ sàng lọc mang tính giáo dục, không phải chẩn đoán y tế hay tâm lý. Nếu bạn thấy khó khăn kéo dài, hãy trò chuyện với chuyên gia tư vấn học đường hoặc người bạn tin tưởng.</p>
+  </div>
+</section>
+
+<section class="container" style="padding-bottom:70px;">
+  <div class="eyebrow">Chặng 3 — Trò chuyện cùng AI</div>
+  <h2>Chatbot đồng hành</h2>
+  <p style="color:var(--ink-soft)">Sau khi có kết quả, hỏi chatbot bất cứ điều gì — nó sẽ giải thích mức độ, gợi ý thẻ tỉnh thức phù hợp và đặt câu hỏi giúp bạn tự nhìn lại thói quen của mình.</p>
+
+  <div class="chat-wrap">
+    <div id="chat"></div>
+    <div class="chat-input-row">
+      <textarea id="userInput" placeholder="Nhập câu hỏi hoặc chia sẻ của bạn..." rows="1"></textarea>
+      <button id="sendBtn" class="btn btn-primary">Gửi</button>
+    </div>
+  </div>
+  <p class="note">Chatbot chỉ hỗ trợ giáo dục và sàng lọc ban đầu, không thay thế chuyên gia tâm lý hay nhân viên y tế.</p>
+</section>
+
+<footer class="site"><div class="container">Dữ liệu bài tự đánh giá được lưu ẩn danh để bạn theo dõi tiến bộ theo thời gian.</div></footer>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="firebase-init.js"></script>
+<script>
+// ===== Cấu hình chatbot (theo file chatbot.html gốc) =====
+const API_URL = 'https://api.shopaikey.com/v1/chat/completions';
+const MODEL = 'gpt-5.4-nano';
+const API_KEY = 'sk-4150297863e3eee405805e8609648e6c5cebb1b502ffb46e';
+
+// ===== Bài kiểm tra sàng lọc =====
+const QUIZ_ITEMS = [
+  'Bạn cảm thấy mỏi mắt sau khi dùng thiết bị',
+  'Bạn bị đau đầu liên quan đến việc sử dụng màn hình',
+  'Bạn cảm thấy suy giảm năng lượng sau khi dùng thiết bị lâu',
+  'Bạn khó tập trung vào việc học hoặc công việc khác',
+  'Bạn cảm thấy căng thẳng vì thiết bị số',
+  'Bạn mất hứng thú với các hoạt động ngoài màn hình',
+  'Bạn sử dụng thiết bị liên tục không nghỉ',
+  'Bạn thấy khó kiểm soát thời gian sử dụng thiết bị của mình'
+];
+
+const quizItemsEl = document.getElementById('quizItems');
+QUIZ_ITEMS.forEach((q, i) => {
+  const row = document.createElement('div');
+  row.className = 'likert';
+  let scaleHtml = '';
+  for (let v = 1; v <= 5; v++) {
+    scaleHtml += `<label><input type="radio" name="q${i}" value="${v}" ${v===1?'required':''}>${v}</label>`;
+  }
+  row.innerHTML = `<span>${i+1}. ${q}</span><div class="likert-scale">${scaleHtml}</div>`;
+  quizItemsEl.appendChild(row);
+});
+
+let lastLevel = null, lastScore = null;
+
+document.getElementById('quizForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const answers = QUIZ_ITEMS.map((_, i) => Number(document.querySelector(`input[name=q${i}]:checked`).value));
+  const avg = answers.reduce((a,b) => a+b, 0) / answers.length;
+  let level, cls;
+  if (avg <= 2.24) { level = 'Thấp'; cls = 'risk-low'; }
+  else if (avg <= 3.58) { level = 'Trung bình'; cls = 'risk-mid'; }
+  else { level = 'Cao'; cls = 'risk-high'; }
+
+  lastLevel = level; lastScore = avg.toFixed(2);
+
+  document.getElementById('scoreVal').textContent = avg.toFixed(2) + ' / 5.00';
+  const badge = document.getElementById('riskBadge');
+  badge.textContent = 'Mức độ: ' + level;
+  badge.className = 'risk-badge ' + cls;
+  document.getElementById('quizResult').style.display = 'block';
+  document.getElementById('quizResult').scrollIntoView({behavior:'smooth'});
+
+  try { await saveScreeningResult(avg, level, answers); } catch(err) { console.error('Không lưu được kết quả:', err); }
+
+  addMsg('bot', `Mình đã xem kết quả của bạn: mức độ ${level} (điểm trung bình ${avg.toFixed(2)}/5). Bạn có thể hỏi mình để hiểu rõ hơn về kết quả này, hoặc mình gợi ý thẻ tỉnh thức phù hợp nhé!`);
+});
+
+// ===== Chatbot =====
+const chatEl = document.getElementById('chat');
+const inputEl = document.getElementById('userInput');
+const sendBtn = document.getElementById('sendBtn');
+let history = [{
+  role: 'system',
+  content: 'Bạn là trợ lý "Hành trình công dân số", hỗ trợ học sinh hiểu về mệt mỏi kỹ thuật số. Giải thích ngắn gọn, thân thiện, đặt câu hỏi gợi mở, gợi ý các thẻ Mindful Chain khi phù hợp (Thẻ Dừng, Thẻ Hỏi, Thẻ Một việc, Thẻ Tắt nhiễu, Thẻ Nghỉ mắt, Thẻ Vận động, Thẻ Không màn hình, Thẻ Giờ ngủ, Thẻ Tự đánh giá). Không chẩn đoán y tế hay tâm lý, không thay thế chuyên gia.'
+}];
+
+function addMsg(role, text) {
+  const div = document.createElement('div');
+  div.className = 'msg ' + role;
+  div.innerHTML = `<span class="label">${role === 'user' ? 'Bạn' : 'Trợ lý'}</span>`;
+  const t = document.createElement('div');
+  t.textContent = text;
+  div.appendChild(t);
+  chatEl.appendChild(div);
+  chatEl.scrollTop = chatEl.scrollHeight;
+  return div;
+}
+
+async function sendMessage() {
+  const text = inputEl.value.trim();
+  if (!text) return;
+  addMsg('user', text);
+  history.push({ role: 'user', content: text });
+  inputEl.value = '';
+  sendBtn.disabled = true;
+  const thinking = addMsg('bot', 'Đang trả lời...');
+
+  try {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + API_KEY },
+      body: JSON.stringify({ model: MODEL, messages: history })
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const reply = data.choices?.[0]?.message?.content || '(Không có phản hồi)';
+    thinking.querySelector('div').textContent = reply;
+    history.push({ role: 'assistant', content: reply });
+  } catch (err) {
+    thinking.querySelector('div').textContent = 'Lỗi khi kết nối tới trợ lý: ' + err.message;
+    history.pop();
+  } finally {
+    sendBtn.disabled = false;
+  }
+}
+sendBtn.addEventListener('click', sendMessage);
+inputEl.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+});
+</script>
+</body>
+</html>
