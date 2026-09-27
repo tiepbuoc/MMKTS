@@ -5,38 +5,41 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Mindful Chain — Chuỗi tỉnh thức số</title>
 <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 <body>
 
 <header class="site">
   <div class="nav-row">
-    <a class="brand" href="index.html">Hành trình công dân số</a>
+    <a class="brand" href="index.html"><i class="fa-solid fa-seedling"></i> Hành trình công dân số</a>
     <ul class="nav-links">
-      <li><a href="index.html">Trang chủ</a></li>
-      <li><a href="hanh-trinh.html">Hành trình &amp; Chatbot</a></li>
-      <li><a href="emo-connect.html">Emo-Connect</a></li>
-      <li><a href="mindful-chain.html" class="active">Mindful Chain</a></li>
+      <li><a href="index.html"><i class="fa-solid fa-house"></i> Trang chủ</a></li>
+      <li><a href="hanh-trinh.html"><i class="fa-solid fa-route"></i> Hành trình</a></li>
+      <li><a href="emo-connect.html"><i class="fa-solid fa-heart"></i> Emo-Connect</a></li>
+      <li><a href="mindful-chain.html" class="active"><i class="fa-solid fa-link"></i> Mindful Chain</a></li>
     </ul>
   </div>
 </header>
 
-<section class="hero" style="padding-bottom:36px;">
+<section class="hero" style="padding-bottom:20px;">
   <div class="container">
-    <div class="eyebrow">Hành động mỗi ngày</div>
+    <div class="eyebrow"><i class="fa-solid fa-link"></i> Hành động mỗi ngày</div>
     <h1>Mindful Chain</h1>
     <p class="lede">Mỗi thẻ là một hành động nhỏ. Hoàn thành một thẻ, thêm một mắt xích vào chuỗi tỉnh thức số của bạn.</p>
-    <button id="drawBtn" class="btn btn-warm">🎴 Rút thẻ hôm nay</button>
+    <button id="drawBtn" class="btn btn-warm"><i class="fa-solid fa-shuffle"></i> Rút thẻ hôm nay</button>
   </div>
 </section>
 
-<section class="container" style="padding-bottom:20px;">
-  <h3>Chuỗi của bạn</h3>
-  <div id="chainTrack" class="chain-track"></div>
-  <p id="chainCount" style="color:var(--ink-soft); font-size:0.9rem;"></p>
+<section class="container" style="padding-bottom:10px;">
+  <div class="card">
+    <h3 style="margin-bottom:6px;"><i class="fa-solid fa-link" style="color:var(--primary)"></i> Chuỗi của bạn</h3>
+    <div id="chainTrack" class="chain-track"></div>
+    <p id="chainCount" style="color:var(--ink-soft); font-size:0.9rem; margin:0;"></p>
+  </div>
 </section>
 
 <section class="container" style="padding-bottom:60px;">
-  <h2>Toàn bộ bộ thẻ</h2>
+  <h2 style="margin-top:36px;">Toàn bộ bộ thẻ</h2>
   <div class="card-grid" id="cardGrid"></div>
 </section>
 
@@ -47,15 +50,15 @@
 <script src="firebase-init.js"></script>
 <script>
 const CARDS = [
-  { id:'dung', group:'Nhận diện', name:'Thẻ Dừng', time:'6 giây', action:'Dừng sáu giây trước khi mở một ứng dụng ngoài kế hoạch.', check:'Bạn có thực sự cần mở app này ngay bây giờ không?' },
-  { id:'hoi', group:'Lựa chọn', name:'Thẻ Hỏi', time:'10 giây', action:'Tự trả lời câu hỏi: "Tôi mở thiết bị để làm gì?"', check:'Câu trả lời của bạn có rõ ràng không?' },
-  { id:'motviec', group:'Lựa chọn', name:'Thẻ Một việc', time:'Cả phiên học', action:'Chỉ thực hiện một nhiệm vụ trong một phiên học, không mở tab khác.', check:'Bạn có bị phân tâm giữa chừng không?' },
-  { id:'tatnhieu', group:'Tự kiểm soát', name:'Thẻ Tắt nhiễu', time:'1 phút', action:'Tắt thông báo không cần thiết trong thời gian học.', check:'Bạn có thấy dễ tập trung hơn không?' },
-  { id:'nghimat', group:'Nghỉ ngơi', name:'Thẻ Nghỉ mắt', time:'2 phút', action:'Rời mắt khỏi màn hình, nhìn ra xa và thư giãn.', check:'Mắt bạn có đỡ mỏi hơn không?' },
-  { id:'vandong', group:'Nghỉ ngơi', name:'Thẻ Vận động', time:'3-5 phút', action:'Đứng dậy và vận động nhẹ sau một phiên sử dụng.', check:'Cơ thể bạn cảm thấy thế nào sau đó?' },
-  { id:'khongmanhinh', group:'Tự kiểm soát', name:'Thẻ Không màn hình', time:'20-30 phút', action:'Thay thế một khoảng thời gian sử dụng thiết bị bằng hoạt động ngoại tuyến.', check:'Bạn đã làm gì thay vào đó?' },
-  { id:'giongu', group:'Tự kiểm soát', name:'Thẻ Giờ ngủ', time:'Trước khi ngủ', action:'Dừng sử dụng thiết bị giải trí trước giờ ngủ.', check:'Bạn có ngủ ngon hơn không?' },
-  { id:'tudanhgia', group:'Nhận diện', name:'Thẻ Tự đánh giá', time:'2 phút', action:'Chấm mức độ mệt mỏi, tập trung và cảm xúc cuối ngày.', check:'Hôm nay bạn cho mình mấy điểm?' },
+  { id:'dung', group:'Nhận diện', name:'Thẻ Dừng', icon:'fa-hand', color:'var(--coral)', time:'6 giây', action:'Dừng sáu giây trước khi mở một ứng dụng ngoài kế hoạch.', check:'Bạn có thực sự cần mở app này ngay bây giờ không?' },
+  { id:'hoi', group:'Lựa chọn', name:'Thẻ Hỏi', icon:'fa-circle-question', color:'var(--purple)', time:'10 giây', action:'Tự trả lời câu hỏi: "Tôi mở thiết bị để làm gì?"', check:'Câu trả lời của bạn có rõ ràng không?' },
+  { id:'motviec', group:'Lựa chọn', name:'Thẻ Một việc', icon:'fa-list-check', color:'var(--purple)', time:'Cả phiên học', action:'Chỉ thực hiện một nhiệm vụ trong một phiên học, không mở tab khác.', check:'Bạn có bị phân tâm giữa chừng không?' },
+  { id:'tatnhieu', group:'Tự kiểm soát', name:'Thẻ Tắt nhiễu', icon:'fa-bell-slash', color:'var(--blue)', time:'1 phút', action:'Tắt thông báo không cần thiết trong thời gian học.', check:'Bạn có thấy dễ tập trung hơn không?' },
+  { id:'nghimat', group:'Nghỉ ngơi', name:'Thẻ Nghỉ mắt', icon:'fa-eye', color:'var(--primary)', time:'2 phút', action:'Rời mắt khỏi màn hình, nhìn ra xa và thư giãn.', check:'Mắt bạn có đỡ mỏi hơn không?' },
+  { id:'vandong', group:'Nghỉ ngơi', name:'Thẻ Vận động', icon:'fa-person-walking', color:'var(--primary)', time:'3-5 phút', action:'Đứng dậy và vận động nhẹ sau một phiên sử dụng.', check:'Cơ thể bạn cảm thấy thế nào sau đó?' },
+  { id:'khongmanhinh', group:'Tự kiểm soát', name:'Thẻ Không màn hình', icon:'fa-mobile-screen', color:'var(--blue)', time:'20-30 phút', action:'Thay thế một khoảng thời gian sử dụng thiết bị bằng hoạt động ngoại tuyến.', check:'Bạn đã làm gì thay vào đó?' },
+  { id:'giongu', group:'Tự kiểm soát', name:'Thẻ Giờ ngủ', icon:'fa-moon', color:'var(--blue)', time:'Trước khi ngủ', action:'Dừng sử dụng thiết bị giải trí trước giờ ngủ.', check:'Bạn có ngủ ngon hơn không?' },
+  { id:'tudanhgia', group:'Nhận diện', name:'Thẻ Tự đánh giá', icon:'fa-chart-simple', color:'var(--coral)', time:'2 phút', action:'Chấm mức độ mệt mỏi, tập trung và cảm xúc cuối ngày.', check:'Hôm nay bạn cho mình mấy điểm?' },
 ];
 
 const grid = document.getElementById('cardGrid');
@@ -63,12 +66,13 @@ CARDS.forEach(c => {
   const div = document.createElement('div');
   div.className = 'mcard';
   div.innerHTML = `
-    <div class="grp">${c.group}</div>
+    <div class="icon-badge" style="background:${c.color}"><i class="fa-solid ${c.icon}"></i></div>
+    <div class="grp">${c.group.toUpperCase()}</div>
     <h3>${c.name}</h3>
-    <div class="time">⏱ ${c.time}</div>
-    <p style="font-size:0.9rem;">${c.action}</p>
+    <div class="time"><i class="fa-regular fa-clock"></i> ${c.time}</div>
+    <p>${c.action}</p>
     <p style="font-size:0.82rem; color:var(--ink-soft);"><em>Tự hỏi: ${c.check}</em></p>
-    <button class="btn btn-ghost" data-id="${c.id}">Đánh dấu hoàn thành</button>
+    <button class="btn btn-ghost" data-id="${c.id}" style="margin-top:6px;"><i class="fa-solid fa-check"></i> Đánh dấu hoàn thành</button>
   `;
   div.querySelector('button').addEventListener('click', () => completeCard(c));
   grid.appendChild(div);
@@ -76,7 +80,7 @@ CARDS.forEach(c => {
 
 document.getElementById('drawBtn').addEventListener('click', () => {
   const pick = CARDS[Math.floor(Math.random() * CARDS.length)];
-  alert(`Thẻ hôm nay: ${pick.name}\n\n${pick.action}\n\nTự hỏi: ${pick.check}`);
+  alert(`🎴 Thẻ hôm nay: ${pick.name}\n\n${pick.action}\n\nTự hỏi: ${pick.check}`);
 });
 
 async function completeCard(c) {

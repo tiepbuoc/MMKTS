@@ -5,73 +5,106 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Emo-Connect</title>
 <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 <body>
 
 <header class="site">
   <div class="nav-row">
-    <a class="brand" href="index.html">Hành trình công dân số</a>
+    <a class="brand" href="index.html"><i class="fa-solid fa-seedling"></i> Hành trình công dân số</a>
     <ul class="nav-links">
-      <li><a href="index.html">Trang chủ</a></li>
-      <li><a href="hanh-trinh.html">Hành trình &amp; Chatbot</a></li>
-      <li><a href="emo-connect.html" class="active">Emo-Connect</a></li>
-      <li><a href="mindful-chain.html">Mindful Chain</a></li>
+      <li><a href="index.html"><i class="fa-solid fa-house"></i> Trang chủ</a></li>
+      <li><a href="hanh-trinh.html"><i class="fa-solid fa-route"></i> Hành trình</a></li>
+      <li><a href="emo-connect.html" class="active"><i class="fa-solid fa-heart"></i> Emo-Connect</a></li>
+      <li><a href="mindful-chain.html"><i class="fa-solid fa-link"></i> Mindful Chain</a></li>
     </ul>
   </div>
 </header>
 
-<section class="hero" style="padding-bottom:36px;">
+<section class="hero" style="padding-bottom:10px;">
   <div class="container">
-    <div class="eyebrow">Hộp thư ẩn danh</div>
+    <div class="eyebrow"><i class="fa-solid fa-lock"></i> Hộp thư ẩn danh</div>
     <h1>Emo-Connect</h1>
     <p class="lede">Không cần họ tên. Không cần số điện thoại. Chỉ cần những gì bạn muốn nói ra.</p>
   </div>
 </section>
 
-<section class="container" style="padding-bottom:60px;">
-  <form id="emoForm">
-    <label for="emotion">Cảm xúc hiện tại của bạn</label>
-    <select id="emotion" required>
-      <option value="">— Chọn —</option>
-      <option>Buồn</option><option>Lo lắng</option><option>Căng thẳng</option>
-      <option>Tức giận</option><option>Trống rỗng</option><option>Bình thường</option><option>Khác</option>
-    </select>
+<section class="container" style="padding-bottom:60px; max-width:640px;">
 
-    <label for="fatigue">Mức độ mệt mỏi (1 = nhẹ, 5 = rất nặng)</label>
-    <select id="fatigue" required>
-      <option value="1">1 — Nhẹ</option><option value="2">2</option><option value="3">3</option>
-      <option value="4">4</option><option value="5">5 — Rất nặng</option>
-    </select>
+  <div class="stepdots" id="stepDots"></div>
 
-    <label for="difficulty">Khó khăn bạn đang gặp phải</label>
-    <textarea id="difficulty" required placeholder="Kể cho tụi mình nghe điều đang khiến bạn mệt mỏi..."></textarea>
+  <!-- Bước 0: Cảm xúc -->
+  <div class="wiz-step" data-step="0">
+    <h3 style="text-align:center;">Cảm xúc hiện tại của bạn là gì?</h3>
+    <div class="emotion-grid" id="emotionGrid"></div>
+  </div>
 
-    <label for="wish">Điều bạn muốn chia sẻ thêm (không bắt buộc)</label>
-    <textarea id="wish"></textarea>
+  <!-- Bước 1: Mức độ mệt mỏi -->
+  <div class="wiz-step" data-step="1">
+    <div class="quiz-card">
+      <h3><i class="fa-solid fa-battery-quarter"></i> Mức độ mệt mỏi của bạn?</h3>
+      <div class="slider-wrap">
+        <div class="slider-value" id="fatigueVal">3</div>
+        <input type="range" min="1" max="5" step="1" value="3" id="fatigueSlider">
+        <div class="slider-labels"><span>Nhẹ</span><span>Rất nặng</span></div>
+      </div>
+    </div>
+  </div>
 
-    <label for="supportType">Hình thức hỗ trợ bạn mong muốn</label>
-    <select id="supportType" required>
-      <option value="">— Chọn —</option>
-      <option>Chỉ muốn được lắng nghe</option>
-      <option>Muốn được tư vấn riêng</option>
-      <option>Muốn thông tin/tài liệu hỗ trợ</option>
-      <option>Chưa chắc chắn</option>
-    </select>
+  <!-- Bước 2: Khó khăn -->
+  <div class="wiz-step" data-step="2">
+    <h3 style="text-align:center;">Khó khăn bạn đang gặp phải là gì?</h3>
+    <textarea id="difficultyInput" placeholder="Kể cho tụi mình nghe điều đang khiến bạn mệt mỏi..." rows="5"></textarea>
+  </div>
 
-    <label style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
-      <input type="checkbox" id="wantContact" style="width:auto; margin:0;">
-      Tôi muốn để lại mã liên hệ để được trao đổi riêng
-    </label>
+  <!-- Bước 3: Chia sẻ thêm -->
+  <div class="wiz-step" data-step="3">
+    <h3 style="text-align:center;">Bạn có muốn chia sẻ thêm điều gì không?</h3>
+    <p style="text-align:center; color:var(--ink-soft); font-size:0.88rem;">Không bắt buộc — bạn có thể bỏ qua bước này.</p>
+    <textarea id="wishInput" placeholder="(không bắt buộc)" rows="5"></textarea>
+  </div>
+
+  <!-- Bước 4: Hình thức hỗ trợ -->
+  <div class="wiz-step" data-step="4">
+    <h3 style="text-align:center;">Bạn mong muốn hình thức hỗ trợ nào?</h3>
+    <div class="choice-list" id="supportChoices"></div>
+  </div>
+
+  <!-- Bước 5: Liên hệ -->
+  <div class="wiz-step" data-step="5">
+    <h3 style="text-align:center;">Bạn có muốn để lại mã liên hệ không?</h3>
+    <p style="text-align:center; color:var(--ink-soft); font-size:0.88rem;">Để được trao đổi riêng — hoàn toàn tùy chọn, không phải tên thật.</p>
+    <div class="choice-list">
+      <button class="choice-btn" id="contactYes"><i class="fa-solid fa-key"></i> Có, tôi muốn để lại mã</button>
+      <button class="choice-btn" id="contactNo"><i class="fa-solid fa-ban"></i> Không, tôi muốn hoàn toàn ẩn danh</button>
+    </div>
     <div id="contactCodeWrap" style="display:none;">
-      <label for="contactCode">Mã cá nhân của bạn (tự đặt, không phải tên thật)</label>
+      <label for="contactCode">Mã cá nhân của bạn (tự đặt)</label>
       <input type="text" id="contactCode" placeholder="Ví dụ: mayxanh92">
     </div>
+  </div>
 
-    <button type="submit" class="btn btn-primary">Gửi ẩn danh</button>
-  </form>
+  <!-- Bước 6: Xác nhận -->
+  <div class="wiz-step" data-step="6">
+    <div class="quiz-card">
+      <i class="fa-solid fa-paper-plane" style="font-size:2rem; color:var(--primary); margin-bottom:10px;"></i>
+      <h3>Sẵn sàng gửi đi?</h3>
+      <p style="color:var(--ink-soft);">Nội dung của bạn sẽ được gửi ẩn danh tới bộ phận hỗ trợ tâm lý học đường.</p>
+      <button class="btn btn-primary" id="submitBtn" style="margin-top:10px;"><i class="fa-solid fa-paper-plane"></i> Gửi ẩn danh</button>
+    </div>
+  </div>
 
-  <div id="emoDone" style="display:none; margin-top:24px;">
-    <p class="note">Cảm ơn bạn đã chia sẻ. Nội dung của bạn đã được gửi đi một cách ẩn danh. Nếu điều bạn viết cho thấy có nguy cơ ảnh hưởng nghiêm trọng đến an toàn, nhà trường sẽ chủ động liên hệ hỗ trợ theo quy trình bảo vệ học sinh.</p>
+  <div id="emoDone" style="display:none;">
+    <div class="quiz-card">
+      <i class="fa-solid fa-circle-check" style="font-size:2.2rem; color:var(--risk-low); margin-bottom:10px;"></i>
+      <h3>Đã gửi thành công!</h3>
+      <p class="note" style="text-align:left;"><i class="fa-solid fa-shield-heart"></i><span>Cảm ơn bạn đã chia sẻ. Nếu điều bạn viết cho thấy có nguy cơ ảnh hưởng nghiêm trọng đến an toàn, nhà trường sẽ chủ động liên hệ hỗ trợ theo quy trình bảo vệ học sinh.</span></p>
+    </div>
+  </div>
+
+  <div class="wizard-nav" id="wizNav">
+    <button class="btn btn-ghost" id="wizBack"><i class="fa-solid fa-arrow-left"></i> Quay lại</button>
+    <button class="btn btn-primary" id="wizNext">Tiếp theo <i class="fa-solid fa-arrow-right"></i></button>
   </div>
 </section>
 
@@ -81,16 +114,128 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="firebase-init.js"></script>
 <script>
-document.getElementById('wantContact').addEventListener('change', (e) => {
-  document.getElementById('contactCodeWrap').style.display = e.target.checked ? 'block' : 'none';
-});
-
-// Phân loại sơ bộ bằng AI dùng chung endpoint chatbot của dự án
 const API_URL = 'https://api.shopaikey.com/v1/chat/completions';
 const MODEL = 'gpt-5.4-nano';
 const API_KEY = 'sk-4150297863e3eee405805e8609648e6c5cebb1b502ffb46e';
 
-async function classifyMessage(text) {
+const EMOTIONS = [
+  { id:'buon', label:'Buồn', icon:'fa-face-sad-tear', bg:'var(--blue-soft)', fg:'var(--blue)' },
+  { id:'lolang', label:'Lo lắng', icon:'fa-face-grimace', bg:'var(--purple-soft)', fg:'var(--purple)' },
+  { id:'cangthang', label:'Căng thẳng', icon:'fa-face-dizzy', bg:'var(--coral-soft)', fg:'var(--coral)' },
+  { id:'tucgian', label:'Tức giận', icon:'fa-face-angry', bg:'var(--pink-soft)', fg:'var(--pink)' },
+  { id:'trongrong', label:'Trống rỗng', icon:'fa-face-meh-blank', bg:'var(--line)', fg:'var(--ink-soft)' },
+  { id:'binhthuong', label:'Bình thường', icon:'fa-face-smile', bg:'var(--primary-soft)', fg:'var(--primary-dark)' },
+  { id:'khac', label:'Khác', icon:'fa-face-flushed', bg:'var(--yellow-soft)', fg:'var(--yellow)' },
+];
+const SUPPORT_TYPES = [
+  { id:'listen', label:'Chỉ muốn được lắng nghe', icon:'fa-ear-listen' },
+  { id:'counsel', label:'Muốn được tư vấn riêng', icon:'fa-comments' },
+  { id:'info', label:'Muốn thông tin/tài liệu hỗ trợ', icon:'fa-book-open' },
+  { id:'unsure', label:'Chưa chắc chắn', icon:'fa-circle-question' },
+];
+
+const grid = document.getElementById('emotionGrid');
+EMOTIONS.forEach(em => {
+  const btn = document.createElement('button');
+  btn.className = 'emotion-tile';
+  btn.style.background = em.bg;
+  btn.dataset.id = em.id;
+  btn.innerHTML = `<i class="fa-solid ${em.icon}" style="color:${em.fg}"></i><span>${em.label}</span>`;
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.emotion-tile').forEach(t => t.classList.remove('selected'));
+    btn.classList.add('selected');
+    state.emotion = em.label;
+    updateNav();
+  });
+  grid.appendChild(btn);
+});
+
+const supportWrap = document.getElementById('supportChoices');
+SUPPORT_TYPES.forEach(s => {
+  const btn = document.createElement('button');
+  btn.className = 'choice-btn';
+  btn.innerHTML = `<i class="fa-solid ${s.icon}"></i> ${s.label}`;
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#supportChoices .choice-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    state.supportType = s.label;
+    updateNav();
+  });
+  supportWrap.appendChild(btn);
+});
+
+const fatigueSlider = document.getElementById('fatigueSlider');
+document.getElementById('fatigueVal').textContent = fatigueSlider.value;
+fatigueSlider.addEventListener('input', () => {
+  document.getElementById('fatigueVal').textContent = fatigueSlider.value;
+});
+
+document.getElementById('contactYes').addEventListener('click', () => {
+  state.wantContact = true;
+  document.getElementById('contactCodeWrap').style.display = 'block';
+  document.getElementById('contactYes').classList.add('selected');
+  document.getElementById('contactNo').classList.remove('selected');
+  updateNav();
+});
+document.getElementById('contactNo').addEventListener('click', () => {
+  state.wantContact = false;
+  document.getElementById('contactCodeWrap').style.display = 'none';
+  document.getElementById('contactNo').classList.add('selected');
+  document.getElementById('contactYes').classList.remove('selected');
+  updateNav();
+});
+
+const steps = document.querySelectorAll('.wiz-step');
+const totalSteps = steps.length;
+let stepIndex = 0;
+const state = { emotion:null, fatigue:3, difficulty:'', wish:'', supportType:null, wantContact:null, contactCode:'' };
+
+const dotsWrap = document.getElementById('stepDots');
+for (let i=0;i<totalSteps;i++){ const d=document.createElement('div'); d.className='stepdot'; dotsWrap.appendChild(d); }
+
+function renderStep(){
+  steps.forEach(s => s.style.display = 'none');
+  steps[stepIndex].style.display = 'block';
+  document.querySelectorAll('.stepdot').forEach((d,i) => d.classList.toggle('active', i===stepIndex));
+  document.getElementById('wizBack').disabled = (stepIndex === 0);
+  const nextBtn = document.getElementById('wizNext');
+  if (stepIndex === totalSteps - 1) {
+    document.getElementById('wizNav').style.display = 'none';
+  } else {
+    document.getElementById('wizNav').style.display = 'flex';
+    nextBtn.innerHTML = stepIndex === 3 && !state.wish
+      ? 'Bỏ qua <i class="fa-solid fa-arrow-right"></i>'
+      : 'Tiếp theo <i class="fa-solid fa-arrow-right"></i>';
+  }
+  updateNav();
+}
+
+function canGoNext(){
+  switch(stepIndex){
+    case 0: return !!state.emotion;
+    case 1: return true;
+    case 2: return document.getElementById('difficultyInput').value.trim().length > 0;
+    case 3: return true; // optional
+    case 4: return !!state.supportType;
+    case 5: return state.wantContact !== null;
+    default: return true;
+  }
+}
+function updateNav(){
+  document.getElementById('wizNext').disabled = !canGoNext();
+}
+
+document.getElementById('wizBack').addEventListener('click', () => {
+  if (stepIndex > 0) { stepIndex--; renderStep(); }
+});
+document.getElementById('wizNext').addEventListener('click', () => {
+  if (stepIndex === 2) state.difficulty = document.getElementById('difficultyInput').value.trim();
+  if (stepIndex === 3) state.wish = document.getElementById('wishInput').value.trim();
+  if (stepIndex === 5) state.contactCode = document.getElementById('contactCode').value.trim();
+  if (stepIndex < totalSteps - 1) { stepIndex++; renderStep(); }
+});
+
+async function classifyMessage(text){
   const categories = ['mệt mỏi','căng thẳng','mất tập trung','áp lực học tập','xung đột gia đình','khó kiểm soát thiết bị','nhu cầu tư vấn','khác'];
   try {
     const res = await fetch(API_URL, {
@@ -99,47 +244,47 @@ async function classifyMessage(text) {
       body: JSON.stringify({
         model: MODEL,
         messages: [
-          { role: 'system', content: `Phân loại nội dung học sinh chia sẻ vào đúng 1 nhãn trong danh sách: ${categories.join(', ')}. Chỉ trả về đúng tên nhãn, không giải thích thêm.` },
-          { role: 'user', content: text }
+          { role:'system', content: `Phân loại nội dung học sinh chia sẻ vào đúng 1 nhãn trong danh sách: ${categories.join(', ')}. Chỉ trả về đúng tên nhãn, không giải thích thêm.` },
+          { role:'user', content: text }
         ]
       })
     });
     const data = await res.json();
     const label = data.choices?.[0]?.message?.content?.trim().toLowerCase();
     return categories.find(c => label && label.includes(c)) || 'khác';
-  } catch (e) {
-    return 'chưa phân loại';
-  }
+  } catch(e){ return 'chưa phân loại'; }
 }
 
-document.getElementById('emoForm').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const btn = e.target.querySelector('button');
-  btn.disabled = true; btn.textContent = 'Đang gửi...';
+document.getElementById('submitBtn').addEventListener('click', async () => {
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang gửi...';
 
-  const difficulty = document.getElementById('difficulty').value;
-  const wantContact = document.getElementById('wantContact').checked;
-  const category = await classifyMessage(difficulty);
+  state.fatigue = Number(fatigueSlider.value);
+  const category = await classifyMessage(state.difficulty);
 
   const payload = {
-    emotion: document.getElementById('emotion').value,
-    fatigueLevel: Number(document.getElementById('fatigue').value),
-    difficulty,
-    wish: document.getElementById('wish').value,
-    supportType: document.getElementById('supportType').value,
+    emotion: state.emotion,
+    fatigueLevel: state.fatigue,
+    difficulty: state.difficulty,
+    wish: state.wish,
+    supportType: state.supportType,
     category,
-    contactCode: wantContact ? document.getElementById('contactCode').value : null
+    contactCode: state.wantContact ? state.contactCode : null
   };
 
   try {
     await saveEmoMessage(payload);
-    document.getElementById('emoForm').style.display = 'none';
+    document.querySelectorAll('.wiz-step').forEach(s => s.style.display='none');
+    document.getElementById('wizNav').style.display = 'none';
+    dotsWrap.style.display = 'none';
     document.getElementById('emoDone').style.display = 'block';
-  } catch (err) {
+  } catch(err) {
     alert('Có lỗi khi gửi, vui lòng thử lại: ' + err.message);
-    btn.disabled = false; btn.textContent = 'Gửi ẩn danh';
+    btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Gửi ẩn danh';
   }
 });
+
+renderStep();
 </script>
 </body>
 </html>
