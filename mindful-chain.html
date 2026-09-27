@@ -129,7 +129,7 @@ drawBtn.addEventListener('click', () => {
     const el = document.createElement('button');
     el.className = 'draw-card-flat';
     el.style.background = card.color ? `linear-gradient(135deg, ${card.color}, var(--purple))` : '';
-    el.innerHTML = `<i class="fa-solid fa-sparkles"></i>`;
+    el.innerHTML = `<i class="fa-solid fa-question"></i>`;
     drawGrid.appendChild(el);
     setTimeout(() => {
       el.style.animationDelay = (i * 0.1) + 's';
