@@ -65,3 +65,110 @@ async function getDistinctCompletedCardIds() {
   snap.forEach(doc => ids.add(doc.data().cardId));
   return Array.from(ids);
 }
+
+/* =========================================================
+   KIẾN THỨC (mục nội dung Hành trình công dân số) — quản lý qua trang Admin
+========================================================= */
+async function getKnowledgeSections() {
+  const snap = await db.collection('knowledgeSections').orderBy('order', 'asc').get();
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+}
+async function addKnowledgeSection(data) {
+  const snap = await db.collection('knowledgeSections').orderBy('order', 'desc').limit(1).get();
+  const nextOrder = snap.empty ? 1 : (snap.docs[0].data().order || 0) + 1;
+  return db.collection('knowledgeSections').add({
+    ...data, order: nextOrder, createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  });
+}
+async function updateKnowledgeSection(id, data) {
+  return db.collection('knowledgeSections').doc(id).update(data);
+}
+async function deleteKnowledgeSection(id) {
+  return db.collection('knowledgeSections').doc(id).delete();
+}
+async function reorderKnowledgeSection(id, newOrder) {
+  return db.collection('knowledgeSections').doc(id).update({ order: newOrder });
+}
+
+/* =========================================================
+   EMO-CONNECT — trò chuyện trực tiếp ẩn danh với cộng tác viên
+   Mỗi trình duyệt chỉ biết ID cuộc trò chuyện của chính mình (lưu localStorage),
+   nên chỉ máy đó mới xem/gửi được vào đúng cuộc trò chuyện đó.
+========================================================= */
+function getLocalChatConvId() {
+  return localStorage.getItem('emo_chat_conv_id');
+}
+function setLocalChatConvId(id) {
+  localStorage.setItem('emo_chat_conv_id', id);
+}
+function clearLocalChatConvId() {
+  localStorage.removeItem('emo_chat_conv_id');
+}
+
+// Tạo cuộc trò chuyện mới, gắn với bản khảo sát vừa gửi (nếu có)
+async function createEmoChat(surveyMessageId) {
+  const ref = await db.collection('emoChats').add({
+    anonId: getAnonId(),
+    surveyMessageId: surveyMessageId || null,
+    status: 'active',
+    deletedByCtv: false,
+    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+    lastMessageAt: firebase.firestore.FieldValue.serverTimestamp(),
+    lastMessagePreview: ''
+  });
+  setLocalChatConvId(ref.id);
+  return ref.id;
+}
+
+async function sendEmoChatMessage(convId, sender, text) {
+  const chatRef = db.collection('emoChats').doc(convId);
+  await chatRef.collection('messages').add({
+    sender, text, createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  });
+  await chatRef.update({
+    lastMessageAt: firebase.firestore.FieldValue.serverTimestamp(),
+    lastMessagePreview: text.slice(0, 120)
+  });
+}
+
+function listenEmoChatMessages(convId, cb) {
+  return db.collection('emoChats').doc(convId).collection('messages')
+    .orderBy('createdAt', 'asc')
+    .onSnapshot(snap => {
+      cb(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    });
+}
+
+function listenEmoChatMeta(convId, cb) {
+  return db.collection('emoChats').doc(convId).onSnapshot(doc => {
+    cb(doc.exists ? { id: doc.id, ...doc.data() } : null);
+  });
+}
+
+// Người dùng bấm "Hủy trò chuyện" — kết thúc phiên hiện tại
+async function endEmoChatByUser(convId) {
+  await db.collection('emoChats').doc(convId).update({ status: 'ended_by_user' });
+  clearLocalChatConvId();
+}
+
+// ---- Dành cho trang Cộng tác viên (ctv.html) ----
+function listenAllEmoChats(cb) {
+  return db.collection('emoChats')
+    .where('deletedByCtv', '==', false)
+    .orderBy('lastMessageAt', 'desc')
+    .onSnapshot(snap => {
+      cb(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    });
+}
+async function ctvDeleteChat(convId) {
+  return db.collection('emoChats').doc(convId).update({ deletedByCtv: true });
+}
+async function getSurveyByAnonId(anonId) {
+  const snap = await db.collection('emoConnectMessages')
+    .where('anonId', '==', anonId).orderBy('createdAt', 'desc').get();
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+}
+async function getSurveyById(id) {
+  const doc = await db.collection('emoConnectMessages').doc(id).get();
+  return doc.exists ? { id: doc.id, ...doc.data() } : null;
+}

@@ -41,14 +41,27 @@
   </div>
 </section>
 
-<!-- Khu vực rút bài / lật bài -->
+<!-- Khu vực rút bài (úp) — bấm 1 thẻ để mở popup lật thẻ -->
 <section class="container" id="drawSection" style="display:none;">
   <div class="draw-grid" id="drawGrid"></div>
-  <div class="decision-row" id="decisionRow" style="display:none;">
-    <button class="btn btn-ghost" id="skipBtn"><i class="fa-solid fa-xmark"></i> Bỏ qua</button>
-    <button class="btn btn-primary" id="commitBtn"><i class="fa-solid fa-check"></i> Sẽ làm</button>
-  </div>
 </section>
+
+<!-- Popup lật thẻ: xem nội dung thẻ to, rõ, quyết định ngay trong popup -->
+<div class="modal-overlay" id="flipModalOverlay">
+  <div class="modal-box flip-modal">
+    <button class="modal-close" id="flipModalClose"><i class="fa-solid fa-xmark"></i></button>
+    <div class="icon-badge" id="flipIconBadge"><i class="fa-solid" id="flipIcon"></i></div>
+    <div class="grp" id="flipGroup"></div>
+    <h3 id="flipName"></h3>
+    <span class="time-chip" id="flipTime"><i class="fa-regular fa-clock"></i> <span></span></span>
+    <p class="action-text" id="flipAction"></p>
+    <p class="check-q" id="flipCheck"></p>
+    <div class="decision-row">
+      <button class="btn btn-ghost" id="skipBtn"><i class="fa-solid fa-xmark"></i> Bỏ qua</button>
+      <button class="btn btn-primary" id="commitBtn"><i class="fa-solid fa-check"></i> Sẽ làm</button>
+    </div>
+  </div>
+</div>
 
 <section class="container" style="padding-bottom:60px; padding-top:10px;">
   <h2 style="margin-top:20px;"><i class="fa-solid fa-list-check"></i> Đã ghi nhận hôm nay</h2>
@@ -86,13 +99,14 @@ function saveToday(data){
   localStorage.setItem(todayKey(), JSON.stringify(data));
 }
 
-/* ===== Rút bài & lật bài ===== */
+/* ===== Rút bài & popup lật bài ===== */
 const drawBtn = document.getElementById('drawBtn');
 const drawSection = document.getElementById('drawSection');
 const drawGrid = document.getElementById('drawGrid');
-const decisionRow = document.getElementById('decisionRow');
+const flipOverlay = document.getElementById('flipModalOverlay');
 let drawLocked = false;
 let pickedCard = null;
+let pickedWrappers = [];
 
 function shuffle(arr){ return [...arr].sort(() => Math.random() - 0.5); }
 
@@ -102,49 +116,48 @@ drawBtn.addEventListener('click', () => {
   const picks = shuffle(CARDS).slice(0, count);
 
   drawGrid.innerHTML = '';
-  decisionRow.style.display = 'none';
   drawSection.style.display = 'block';
   pickedCard = null;
 
-  const wrappers = picks.map((card, i) => {
-    const el = document.createElement('div');
-    el.className = 'draw-card';
-    el.innerHTML = `
-      <div class="draw-card-inner">
-        <div class="draw-front"><i class="fa-solid fa-sparkles"></i></div>
-        <div class="draw-back">
-          <div class="icon-badge" style="background:${card.color}"><i class="fa-solid ${card.icon}"></i></div>
-          <div class="grp">${card.group.toUpperCase()}</div>
-          <h4>${card.name}</h4>
-          <p>${card.action}</p>
-          <p class="check-q">${card.check}</p>
-        </div>
-      </div>`;
+  pickedWrappers = picks.map((card, i) => {
+    const el = document.createElement('button');
+    el.className = 'draw-card-flat';
+    el.style.background = card.color ? `linear-gradient(135deg, ${card.color}, var(--purple))` : '';
+    el.innerHTML = `<i class="fa-solid fa-sparkles"></i>`;
     drawGrid.appendChild(el);
     setTimeout(() => {
-      el.style.animationDelay = (i * 0.12) + 's';
+      el.style.animationDelay = (i * 0.1) + 's';
       el.classList.add('dealt');
     }, 30);
-    el.addEventListener('click', () => pickCard(card, el, wrappers));
+    el.addEventListener('click', () => openFlipModal(card, el));
     return el;
   });
 
   drawBtn.disabled = true;
 });
 
-function pickCard(card, el, allWrappers){
+function openFlipModal(card, el){
   if (drawLocked) return;
   drawLocked = true;
   pickedCard = card;
 
-  allWrappers.forEach(w => { if (w !== el) w.classList.add('discarded'); });
+  pickedWrappers.forEach(w => { if (w !== el) w.classList.add('discarded'); });
 
-  el.classList.add('flipping');
-  setTimeout(() => {
-    el.classList.remove('flipping');
-    el.classList.add('flipped');
-    decisionRow.style.display = 'flex';
-  }, 800);
+  document.getElementById('flipIconBadge').style.background = card.color;
+  document.getElementById('flipIcon').className = 'fa-solid ' + card.icon;
+  document.getElementById('flipGroup').textContent = card.group.toUpperCase();
+  document.getElementById('flipName').textContent = card.name;
+  document.getElementById('flipTime').querySelector('span').textContent = card.time;
+  document.getElementById('flipAction').textContent = card.action;
+  document.getElementById('flipCheck').textContent = card.check;
+  flipOverlay.classList.add('open');
+}
+
+document.getElementById('flipModalClose').addEventListener('click', () => closeFlipModal(true));
+
+function closeFlipModal(skippedWithoutChoice){
+  flipOverlay.classList.remove('open');
+  if (skippedWithoutChoice) closeDraw();
 }
 
 document.getElementById('commitBtn').addEventListener('click', () => {
@@ -152,28 +165,32 @@ document.getElementById('commitBtn').addEventListener('click', () => {
   const data = loadToday();
   data.committed.push({
     id: pickedCard.id, name: pickedCard.name, group: pickedCard.group,
-    icon: pickedCard.icon, color: pickedCard.color,
+    icon: pickedCard.icon, color: pickedCard.color, time: pickedCard.time,
     action: pickedCard.action, check: pickedCard.check,
     done: false, ts: Date.now()
   });
   saveToday(data);
   renderTodayList();
   renderFlame();
+  flipOverlay.classList.remove('open');
   closeDraw();
 });
 
-document.getElementById('skipBtn').addEventListener('click', closeDraw);
+document.getElementById('skipBtn').addEventListener('click', () => {
+  flipOverlay.classList.remove('open');
+  closeDraw();
+});
 
 function closeDraw(){
   drawSection.style.display = 'none';
   drawGrid.innerHTML = '';
-  decisionRow.style.display = 'none';
   drawLocked = false;
   pickedCard = null;
+  pickedWrappers = [];
   drawBtn.disabled = false;
 }
 
-/* ===== Danh sách đã ghi nhận hôm nay + đánh dấu hoàn thành ===== */
+/* ===== Danh sách đã ghi nhận hôm nay — thẻ dọc, đầy đủ nội dung ===== */
 function renderTodayList(){
   const data = loadToday();
   const wrap = document.getElementById('todayList');
@@ -185,21 +202,32 @@ function renderTodayList(){
   }
 
   data.committed.forEach((c, idx) => {
-    const row = document.createElement('div');
-    row.className = 'today-item' + (c.done ? ' done' : '');
-    row.innerHTML = `
-      <div class="icon-badge" style="background:${c.color}"><i class="fa-solid ${c.icon}"></i></div>
-      <div class="info">
-        <h4>${c.name}</h4>
-        <span class="grp">${c.group.toUpperCase()}</span>
+    const card = document.createElement('div');
+    card.className = 'today-card' + (c.done ? ' done' : '');
+    card.innerHTML = `
+      <div class="today-head">
+        <div class="icon-badge" style="background:${c.color}"><i class="fa-solid ${c.icon}"></i></div>
+        <div class="txt">
+          <span class="grp">${c.group.toUpperCase()}</span>
+          <h4>${c.name}</h4>
+        </div>
+        ${c.time ? `<span class="time-chip"><i class="fa-regular fa-clock"></i> ${c.time}</span>` : ''}
       </div>
-      <button class="btn ${c.done ? 'btn-ghost' : 'btn-primary'} check-btn" data-idx="${idx}" ${c.done ? 'disabled' : ''}>
-        <i class="fa-solid ${c.done ? 'fa-circle-check' : 'fa-check'}"></i> ${c.done ? 'Đã hoàn thành' : 'Đánh dấu hoàn thành'}
-      </button>`;
+      <p class="action-text">${c.action}</p>
+      <p class="check-q"><i class="fa-regular fa-comment-dots"></i> ${c.check}</p>
+      <div class="status-row">
+        <span class="status-pill ${c.done ? '' : 'pending'}">
+          <i class="fa-solid ${c.done ? 'fa-circle-check' : 'fa-hourglass-half'}"></i>
+          ${c.done ? 'Đã hoàn thành' : 'Chưa hoàn thành'}
+        </span>
+        <button class="btn ${c.done ? 'btn-ghost' : 'btn-primary'} check-btn" data-idx="${idx}" ${c.done ? 'disabled' : ''}>
+          <i class="fa-solid ${c.done ? 'fa-circle-check' : 'fa-check'}"></i> ${c.done ? 'Đã xong' : 'Đánh dấu hoàn thành'}
+        </button>
+      </div>`;
     if (!c.done) {
-      row.querySelector('.check-btn').addEventListener('click', () => markDone(idx));
+      card.querySelector('.check-btn').addEventListener('click', () => markDone(idx));
     }
-    wrap.appendChild(row);
+    wrap.appendChild(card);
   });
 }
 

@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cộng tác viên — Hành trình công dân số</title>
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+
+<header class="site">
+  <div class="nav-row">
+    <a class="brand" href="index.html"><i class="fa-solid fa-seedling"></i> Hành trình công dân số</a>
+    <ul class="nav-links">
+      <li><a href="index.html"><i class="fa-solid fa-house"></i> Trang chủ</a></li>
+    </ul>
+  </div>
+</header>
+
+<section class="hero" style="padding-bottom:16px;">
+  <div class="container">
+    <div class="hidden-page-badge"><i class="fa-solid fa-user-shield"></i> Trang nội bộ — chỉ dùng bằng link trực tiếp, không hiển thị trên menu</div>
+    <h1>Bảng điều khiển Cộng tác viên</h1>
+    <p class="lede">Xem và trả lời các cuộc trò chuyện ẩn danh từ Emo-Connect, sắp xếp theo tin nhắn gần nhất.</p>
+  </div>
+</section>
+
+<section class="container" style="padding-bottom:60px;">
+  <div class="split-layout">
+    <div class="conv-list" id="convList">
+      <p style="padding:20px; text-align:center; color:var(--ink-soft);"><i class="fa-solid fa-spinner fa-spin"></i> Đang tải danh sách...</p>
+    </div>
+
+    <div id="convDetail">
+      <div class="card" style="text-align:center; color:var(--ink-soft); padding:50px 20px;">
+        <i class="fa-solid fa-comments" style="font-size:2rem; margin-bottom:10px; opacity:0.5;"></i>
+        <p style="margin:0;">Chọn một cuộc trò chuyện ở danh sách bên trái để bắt đầu.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="site"><div class="container">Trang dành cho cộng tác viên hỗ trợ tâm lý học đường.</div></footer>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="firebase-init.js"></script>
+<script>
+let allChats = [];
+let activeConvId = null;
+let unsubActiveMsgs = null;
+
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+}
+function timeAgo(ts){
+  if (!ts || !ts.toDate) return '';
+  const d = ts.toDate();
+  return d.toLocaleString('vi-VN', { hour:'2-digit', minute:'2-digit', day:'2-digit', month:'2-digit' });
+}
+
+listenAllEmoChats(chats => {
+  allChats = chats;
+  renderConvList();
+  if (activeConvId) {
+    const stillThere = chats.find(c => c.id === activeConvId);
+    if (!stillThere) { activeConvId = null; renderEmptyDetail(); }
+  }
+});
+
+function renderConvList(){
+  const wrap = document.getElementById('convList');
+  if (allChats.length === 0) {
+    wrap.innerHTML = `<p style="padding:20px; text-align:center; color:var(--ink-soft);">Chưa có cuộc trò chuyện nào.</p>`;
+    return;
+  }
+  wrap.innerHTML = '';
+  allChats.forEach(c => {
+    const el = document.createElement('div');
+    el.className = 'conv-item' + (c.id === activeConvId ? ' active' : '');
+    const initials = (c.anonId || '??').slice(3, 5).toUpperCase();
+    el.innerHTML = `
+      <div class="av">${initials}</div>
+      <div class="info">
+        <div class="name">Học sinh ${escapeHtml((c.anonId||'').slice(-6))}
+          <span class="conv-badge ${c.status === 'active' ? 'active' : ''}">${c.status === 'active' ? 'Đang mở' : 'Đã kết thúc'}</span>
+        </div>
+        <div class="prev">${escapeHtml(c.lastMessagePreview || 'Chưa có tin nhắn')} · ${timeAgo(c.lastMessageAt)}</div>
+      </div>
+      <button class="del-btn" title="Ẩn cuộc trò chuyện này"><i class="fa-solid fa-trash"></i></button>`;
+    el.querySelector('.info').addEventListener('click', () => openConv(c));
+    el.querySelector('.av').addEventListener('click', () => openConv(c));
+    el.querySelector('.del-btn').addEventListener('click', async (e) => {
+      e.stopPropagation();
+      if (!confirm('Ẩn cuộc trò chuyện này khỏi danh sách?')) return;
+      await ctvDeleteChat(c.id);
+      if (activeConvId === c.id) { activeConvId = null; renderEmptyDetail(); }
+    });
+    wrap.appendChild(el);
+  });
+}
+
+function renderEmptyDetail(){
+  document.getElementById('convDetail').innerHTML = `
+    <div class="card" style="text-align:center; color:var(--ink-soft); padding:50px 20px;">
+      <i class="fa-solid fa-comments" style="font-size:2rem; margin-bottom:10px; opacity:0.5;"></i>
+      <p style="margin:0;">Chọn một cuộc trò chuyện ở danh sách bên trái để bắt đầu.</p>
+    </div>`;
+}
+
+async function openConv(c){
+  activeConvId = c.id;
+  renderConvList();
+  if (unsubActiveMsgs) unsubActiveMsgs();
+
+  let surveyHtml = `<p style="color:var(--ink-soft); margin:0;">Không có dữ liệu khảo sát liên kết.</p>`;
+  try {
+    let survey = null;
+    if (c.surveyMessageId) survey = await getSurveyById(c.surveyMessageId);
+    if (!survey) {
+      const list = await getSurveyByAnonId(c.anonId);
+      survey = list[0] || null;
+    }
+    if (survey) {
+      surveyHtml = `<dl>
+        <dt>Cảm xúc</dt><dd>${escapeHtml(survey.emotion || '—')}</dd>
+        <dt>Mức mệt mỏi</dt><dd>${survey.fatigueLevel ?? '—'}/5</dd>
+        <dt>Khó khăn</dt><dd>${escapeHtml(survey.difficulty || '—')}</dd>
+        <dt>Chia sẻ thêm</dt><dd>${escapeHtml(survey.wish || '—')}</dd>
+        <dt>Mong muốn hỗ trợ</dt><dd>${escapeHtml(survey.supportType || '—')}</dd>
+        <dt>Phân loại</dt><dd>${escapeHtml(survey.category || '—')}</dd>
+        <dt>Mã liên hệ</dt><dd>${escapeHtml(survey.contactCode || 'Ẩn danh hoàn toàn')}</dd>
+      </dl>`;
+    }
+  } catch(e){ surveyHtml = `<p style="color:var(--risk-high);margin:0;">Lỗi tải khảo sát: ${e.message}</p>`; }
+
+  document.getElementById('convDetail').innerHTML = `
+    <div class="survey-panel">
+      <strong style="display:flex; align-items:center; gap:8px; margin-bottom:10px;"><i class="fa-solid fa-clipboard-list"></i> Dữ liệu khảo sát Emo-Connect</strong>
+      ${surveyHtml}
+    </div>
+    <div class="ctv-chat-wrap">
+      <div class="chat-header">
+        <div class="who"><i class="fa-solid fa-user avatar"></i> Học sinh ${escapeHtml((c.anonId||'').slice(-6))}</div>
+        <span class="conv-badge ${c.status === 'active' ? 'active' : ''}">${c.status === 'active' ? 'Đang mở' : 'Đã kết thúc'}</span>
+      </div>
+      <div id="ctvChat"></div>
+      <div class="chat-input-row">
+        <textarea id="ctvChatInput" placeholder="Nhập phản hồi cho học sinh..." rows="1" ${c.status !== 'active' ? 'disabled' : ''}></textarea>
+        <button id="ctvChatSend" class="btn btn-primary btn-round" ${c.status !== 'active' ? 'disabled' : ''}><i class="fa-solid fa-paper-plane"></i></button>
+      </div>
+    </div>`;
+
+  const chatEl = document.getElementById('ctvChat');
+  unsubActiveMsgs = listenEmoChatMessages(c.id, msgs => {
+    chatEl.innerHTML = '';
+    msgs.forEach(m => {
+      const div = document.createElement('div');
+      div.className = 'msg ' + (m.sender === 'ctv' ? 'user' : 'ctv');
+      div.innerHTML = `<span class="label">${m.sender === 'ctv' ? 'Bạn (CTV)' : 'Học sinh'}</span><div style="white-space:pre-wrap;">${escapeHtml(m.text)}</div>`;
+      chatEl.appendChild(div);
+    });
+    chatEl.scrollTop = chatEl.scrollHeight;
+  });
+
+  document.getElementById('ctvChatSend').addEventListener('click', () => sendCtvMsg(c.id));
+  document.getElementById('ctvChatInput').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendCtvMsg(c.id); }
+  });
+}
+
+async function sendCtvMsg(convId){
+  const input = document.getElementById('ctvChatInput');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  try { await sendEmoChatMessage(convId, 'ctv', text); }
+  catch(e){ alert('Không gửi được: ' + e.message); }
+}
+</script>
+</body>
+</html>

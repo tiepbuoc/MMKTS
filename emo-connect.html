@@ -31,6 +31,46 @@
 
 <section class="container" style="padding-bottom:60px; max-width:640px;">
 
+  <!-- ===== MENU: chọn 1 trong 2 hình thức ===== -->
+  <div id="emoMenu" class="emo-menu">
+    <button class="emo-menu-card" id="menuToSurvey">
+      <div class="icon-badge" style="background:var(--primary);"><i class="fa-solid fa-clipboard-question"></i></div>
+      <div class="txt">
+        <h4>Khảo sát tâm lý ẩn danh</h4>
+        <p>Trả lời vài câu hỏi ngắn về cảm xúc, khó khăn bạn đang gặp — hoàn toàn ẩn danh.</p>
+      </div>
+    </button>
+    <button class="emo-menu-card" id="menuToChat">
+      <div class="icon-badge" style="background:var(--coral);"><i class="fa-solid fa-comments"></i></div>
+      <div class="txt">
+        <h4>Trò chuyện trực tiếp với cộng tác viên</h4>
+        <p id="chatUnlockText">Trò chuyện riêng, ẩn danh, chỉ máy của bạn mới xem được cuộc trò chuyện này.</p>
+      </div>
+    </button>
+  </div>
+
+  <!-- ===== CHẾ ĐỘ 2: CHAT VỚI CỘNG TÁC VIÊN ===== -->
+  <div id="chatMode" style="display:none;">
+    <div class="chat-status" style="margin-bottom:10px;">
+      <span class="dot" id="chatStatusDot"></span>
+      <span id="chatStatusText">Đang kết nối...</span>
+    </div>
+    <div class="ctv-chat-wrap">
+      <div class="chat-header">
+        <div class="who"><i class="fa-solid fa-user-shield avatar"></i> Cộng tác viên hỗ trợ</div>
+        <button class="btn btn-ghost btn-round" id="cancelChatBtn" title="Hủy trò chuyện"><i class="fa-solid fa-right-from-bracket"></i></button>
+      </div>
+      <div id="emoChat"></div>
+      <div class="chat-input-row">
+        <textarea id="emoChatInput" placeholder="Nhập tin nhắn..." rows="1"></textarea>
+        <button id="emoChatSend" class="btn btn-primary btn-round"><i class="fa-solid fa-paper-plane"></i></button>
+      </div>
+    </div>
+    <p class="note" style="margin-top:14px;"><i class="fa-solid fa-shield-heart"></i><span>Cuộc trò chuyện này chỉ hiển thị trên máy bạn đang dùng. Bấm nút thoát ở góc trên để hủy và quay lại menu.</span></p>
+  </div>
+
+  <!-- ===== CHẾ ĐỘ 1: KHẢO SÁT (wizard hiện có) ===== -->
+  <div id="surveyMode" style="display:none;">
   <div class="stepdots" id="stepDots"></div>
 
   <!-- Bước 0: Cảm xúc -->
@@ -99,6 +139,8 @@
       <i class="fa-solid fa-circle-check" style="font-size:2.2rem; color:var(--risk-low); margin-bottom:10px;"></i>
       <h3>Đã gửi thành công!</h3>
       <p class="note" style="text-align:left;"><i class="fa-solid fa-shield-heart"></i><span>Cảm ơn bạn đã chia sẻ. Nếu điều bạn viết cho thấy có nguy cơ ảnh hưởng nghiêm trọng đến an toàn, nhà trường sẽ chủ động liên hệ hỗ trợ theo quy trình bảo vệ học sinh.</span></p>
+      <button class="btn btn-primary" id="goToChatBtn" style="margin-top:6px;"><i class="fa-solid fa-comments"></i> Trò chuyện trực tiếp với cộng tác viên</button>
+      <button class="btn btn-ghost" id="backToMenuBtn" style="margin-top:10px;"><i class="fa-solid fa-house"></i> Về trang Emo-Connect</button>
     </div>
   </div>
 
@@ -106,6 +148,7 @@
     <button class="btn btn-ghost" id="wizBack"><i class="fa-solid fa-arrow-left"></i> Quay lại</button>
     <button class="btn btn-primary" id="wizNext">Tiếp theo <i class="fa-solid fa-arrow-right"></i></button>
   </div>
+  </div><!-- /#surveyMode -->
 </section>
 
 <footer class="site"><div class="container">Biểu mẫu không thu thập họ tên, lớp, số điện thoại hay email tự động.</div></footer>
@@ -277,11 +320,14 @@ document.getElementById('submitBtn').addEventListener('click', async () => {
   };
 
   try {
-    await saveEmoMessage(payload);
+    const ref = await saveEmoMessage(payload);
+    localStorage.setItem('emo_last_survey_id', ref.id);
+    localStorage.setItem('emo_survey_done', 'true');
     document.querySelectorAll('.wiz-step').forEach(s => s.style.display='none');
     document.getElementById('wizNav').style.display = 'none';
     dotsWrap.style.display = 'none';
     document.getElementById('emoDone').style.display = 'block';
+    refreshChatLockUI();
   } catch(err) {
     alert('Có lỗi khi gửi, vui lòng thử lại: ' + err.message);
     btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Gửi ẩn danh';
@@ -289,6 +335,129 @@ document.getElementById('submitBtn').addEventListener('click', async () => {
 });
 
 renderStep();
+
+/* =========================================================
+   ĐIỀU HƯỚNG 3 CHẾ ĐỘ: menu / khảo sát / chat với cộng tác viên
+========================================================= */
+const emoMenu = document.getElementById('emoMenu');
+const surveyMode = document.getElementById('surveyMode');
+const chatMode = document.getElementById('chatMode');
+
+function isChatUnlocked(){ return localStorage.getItem('emo_survey_done') === 'true'; }
+
+function refreshChatLockUI(){
+  const menuChatBtn = document.getElementById('menuToChat');
+  const txt = document.getElementById('chatUnlockText');
+  if (isChatUnlocked()) {
+    menuChatBtn.classList.remove('locked');
+    txt.innerHTML = 'Trò chuyện riêng, ẩn danh, chỉ máy của bạn mới xem được cuộc trò chuyện này.';
+  } else {
+    menuChatBtn.classList.add('locked');
+    txt.innerHTML = 'Hoàn thành khảo sát tâm lý trước để mở khóa hình thức này.<span class="lock-note"><i class="fa-solid fa-lock"></i> Chưa mở khóa</span>';
+  }
+}
+
+function showMenu(){
+  emoMenu.style.display = 'flex';
+  surveyMode.style.display = 'none';
+  chatMode.style.display = 'none';
+  refreshChatLockUI();
+}
+function showSurvey(){
+  emoMenu.style.display = 'none';
+  surveyMode.style.display = 'block';
+  chatMode.style.display = 'none';
+}
+function showChat(){
+  emoMenu.style.display = 'none';
+  surveyMode.style.display = 'none';
+  chatMode.style.display = 'block';
+  startChatSession();
+}
+
+document.getElementById('menuToSurvey').addEventListener('click', showSurvey);
+document.getElementById('menuToChat').addEventListener('click', () => {
+  if (!isChatUnlocked()) return;
+  showChat();
+});
+document.getElementById('goToChatBtn').addEventListener('click', showChat);
+document.getElementById('backToMenuBtn').addEventListener('click', showMenu);
+
+/* ===== Chat với cộng tác viên ===== */
+const emoChatEl = document.getElementById('emoChat');
+let unsubMessages = null, unsubMeta = null, currentConvId = null;
+
+function escapeHtmlEmo(str){
+  return String(str).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+}
+function renderChatMessages(msgs){
+  emoChatEl.innerHTML = '';
+  if (msgs.length === 0) {
+    emoChatEl.innerHTML = `<p style="text-align:center;color:var(--ink-soft);font-size:0.88rem;">Cộng tác viên sẽ sớm phản hồi bạn. Hãy để lại lời nhắn đầu tiên nhé!</p>`;
+    return;
+  }
+  msgs.forEach(m => {
+    const div = document.createElement('div');
+    div.className = 'msg ' + (m.sender === 'user' ? 'user' : 'ctv');
+    div.innerHTML = `<span class="label">${m.sender === 'user' ? 'Bạn' : 'Cộng tác viên'}</span><div style="white-space:pre-wrap;">${escapeHtmlEmo(m.text)}</div>`;
+    emoChatEl.appendChild(div);
+  });
+  emoChatEl.scrollTop = emoChatEl.scrollHeight;
+}
+
+async function startChatSession(){
+  if (unsubMessages) unsubMessages();
+  if (unsubMeta) unsubMeta();
+  const statusDot = document.getElementById('chatStatusDot');
+  const statusText = document.getElementById('chatStatusText');
+
+  let convId = getLocalChatConvId();
+  try {
+    if (convId) {
+      const meta = await db.collection('emoChats').doc(convId).get();
+      if (!meta.exists || meta.data().status !== 'active') convId = null;
+    }
+    if (!convId) {
+      convId = await createEmoChat(localStorage.getItem('emo_last_survey_id'));
+    }
+    currentConvId = convId;
+    statusDot.classList.remove('waiting');
+    statusText.textContent = 'Đã kết nối — bạn có thể nhắn tin ngay';
+    unsubMessages = listenEmoChatMessages(convId, renderChatMessages);
+    unsubMeta = listenEmoChatMeta(convId, (meta) => {
+      if (!meta || meta.status !== 'active') {
+        statusDot.classList.add('waiting');
+        statusText.textContent = 'Cuộc trò chuyện đã kết thúc';
+      }
+    });
+  } catch (err) {
+    statusText.textContent = 'Không kết nối được: ' + err.message;
+  }
+}
+
+document.getElementById('emoChatSend').addEventListener('click', sendEmoMsg);
+document.getElementById('emoChatInput').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendEmoMsg(); }
+});
+async function sendEmoMsg(){
+  const input = document.getElementById('emoChatInput');
+  const text = input.value.trim();
+  if (!text || !currentConvId) return;
+  input.value = '';
+  try { await sendEmoChatMessage(currentConvId, 'user', text); }
+  catch(err){ alert('Không gửi được: ' + err.message); }
+}
+
+document.getElementById('cancelChatBtn').addEventListener('click', async () => {
+  if (!confirm('Bạn có chắc muốn hủy trò chuyện này không?')) return;
+  if (currentConvId) { try { await endEmoChatByUser(currentConvId); } catch(e){} }
+  if (unsubMessages) unsubMessages();
+  if (unsubMeta) unsubMeta();
+  currentConvId = null;
+  showMenu();
+});
+
+showMenu();
 </script>
 </body>
 </html>
