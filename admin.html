@@ -12,12 +12,18 @@
 <header class="site">
   <div class="nav-row">
     <a class="brand" href="index.html"><i class="fa-solid fa-seedling"></i> Hành trình công dân số</a>
-    <ul class="nav-links">
+    <button class="nav-toggle" type="button" id="navToggleBtn" aria-label="Mở menu"><i class="fa-solid fa-bars"></i></button>
+    <ul class="nav-links" id="navLinksEl">
       <li><a href="index.html"><i class="fa-solid fa-house"></i> Trang chủ</a></li>
       <li><a href="hanh-trinh.html"><i class="fa-solid fa-route"></i> Hành trình</a></li>
     </ul>
   </div>
 </header>
+<script>
+document.getElementById('navToggleBtn').addEventListener('click', () => {
+  document.getElementById('navLinksEl').classList.toggle('open');
+});
+</script>
 
 <section class="hero" style="padding-bottom:16px;">
   <div class="container">

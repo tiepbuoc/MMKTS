@@ -12,11 +12,17 @@
 <header class="site">
   <div class="nav-row">
     <a class="brand" href="index.html"><i class="fa-solid fa-seedling"></i> Hành trình công dân số</a>
-    <ul class="nav-links">
+    <button class="nav-toggle" type="button" id="navToggleBtn" aria-label="Mở menu"><i class="fa-solid fa-bars"></i></button>
+    <ul class="nav-links" id="navLinksEl">
       <li><a href="index.html"><i class="fa-solid fa-house"></i> Trang chủ</a></li>
     </ul>
   </div>
 </header>
+<script>
+document.getElementById('navToggleBtn').addEventListener('click', () => {
+  document.getElementById('navLinksEl').classList.toggle('open');
+});
+</script>
 
 <section class="hero" style="padding-bottom:16px;">
   <div class="container">
@@ -28,6 +34,11 @@
 
 <section class="container" style="padding-bottom:60px;">
   <div class="split-layout">
+    <button class="conv-list-toggle" id="convListToggleBtn">
+      <span><i class="fa-solid fa-list"></i> Danh sách hội thoại</span>
+      <i class="fa-solid fa-chevron-down"></i>
+    </button>
+    <div class="conv-list-backdrop" id="convListBackdrop"></div>
     <div class="conv-list" id="convList">
       <p style="padding:20px; text-align:center; color:var(--ink-soft);"><i class="fa-solid fa-spinner fa-spin"></i> Đang tải danh sách...</p>
     </div>
@@ -50,6 +61,18 @@
 let allChats = [];
 let activeConvId = null;
 let unsubActiveMsgs = null;
+
+const convListEl = document.getElementById('convList');
+const convListBackdrop = document.getElementById('convListBackdrop');
+document.getElementById('convListToggleBtn').addEventListener('click', () => {
+  convListEl.classList.add('open');
+  convListBackdrop.classList.add('open');
+});
+convListBackdrop.addEventListener('click', closeConvList);
+function closeConvList(){
+  convListEl.classList.remove('open');
+  convListBackdrop.classList.remove('open');
+}
 
 function escapeHtml(str){
   return String(str).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
@@ -112,6 +135,7 @@ function renderEmptyDetail(){
 async function openConv(c){
   activeConvId = c.id;
   renderConvList();
+  closeConvList();
   if (unsubActiveMsgs) unsubActiveMsgs();
 
   let surveyHtml = `<p style="color:var(--ink-soft); margin:0;">Không có dữ liệu khảo sát liên kết.</p>`;
