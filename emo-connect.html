@@ -164,6 +164,10 @@ SUPPORT_TYPES.forEach(s => {
   supportWrap.appendChild(btn);
 });
 
+document.getElementById('difficultyInput').addEventListener('input', updateNav);
+document.getElementById('wishInput').addEventListener('input', updateNav);
+document.getElementById('contactCode').addEventListener('input', updateNav);
+
 const fatigueSlider = document.getElementById('fatigueSlider');
 document.getElementById('fatigueVal').textContent = fatigueSlider.value;
 fatigueSlider.addEventListener('input', () => {

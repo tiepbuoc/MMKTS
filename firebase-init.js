@@ -56,3 +56,12 @@ async function getChainLength() {
     .where('anonId', '==', getAnonId()).get();
   return snap.size;
 }
+
+// ---- Lấy danh sách mã thẻ (duy nhất) đã hoàn thành ít nhất 1 lần ----
+async function getDistinctCompletedCardIds() {
+  const snap = await db.collection('cardCompletions')
+    .where('anonId', '==', getAnonId()).get();
+  const ids = new Set();
+  snap.forEach(doc => ids.add(doc.data().cardId));
+  return Array.from(ids);
+}

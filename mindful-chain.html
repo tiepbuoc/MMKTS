@@ -21,29 +21,41 @@
   </div>
 </header>
 
-<section class="hero" style="padding-bottom:20px;">
+<section class="hero" style="padding-bottom:16px;">
   <div class="container">
     <div class="eyebrow"><i class="fa-solid fa-link"></i> Hành động mỗi ngày</div>
     <h1>Mindful Chain</h1>
-    <p class="lede">Mỗi thẻ là một hành động nhỏ. Hoàn thành một thẻ, thêm một mắt xích vào chuỗi tỉnh thức số của bạn.</p>
+    <p class="lede">Rút 1 tay bài, lật đúng 1 lá — rồi quyết định bạn có muốn thử hành động đó hôm nay không.</p>
     <button id="drawBtn" class="btn btn-warm"><i class="fa-solid fa-shuffle"></i> Rút thẻ hôm nay</button>
   </div>
 </section>
 
-<section class="container" style="padding-bottom:10px;">
+<section class="container">
   <div class="card">
-    <h3 style="margin-bottom:6px;"><i class="fa-solid fa-link" style="color:var(--primary)"></i> Chuỗi của bạn</h3>
-    <div id="chainTrack" class="chain-track"></div>
+    <h3 style="margin-bottom:6px;"><i class="fa-solid fa-link" style="color:var(--primary)"></i> Chuỗi hôm nay</h3>
+    <div class="flame-streak">
+      <i class="fa-solid fa-fire"></i>
+      <div class="count"><span id="chainDone">0</span><span class="sep">/</span><span id="chainTotal">0</span></div>
+    </div>
     <p id="chainCount" style="color:var(--ink-soft); font-size:0.9rem; margin:0;"></p>
   </div>
 </section>
 
-<section class="container" style="padding-bottom:60px;">
-  <h2 style="margin-top:36px;">Toàn bộ bộ thẻ</h2>
-  <div class="card-grid" id="cardGrid"></div>
+<!-- Khu vực rút bài / lật bài -->
+<section class="container" id="drawSection" style="display:none;">
+  <div class="draw-grid" id="drawGrid"></div>
+  <div class="decision-row" id="decisionRow" style="display:none;">
+    <button class="btn btn-ghost" id="skipBtn"><i class="fa-solid fa-xmark"></i> Bỏ qua</button>
+    <button class="btn btn-primary" id="commitBtn"><i class="fa-solid fa-check"></i> Sẽ làm</button>
+  </div>
 </section>
 
-<footer class="site"><div class="container">Chuỗi được tính riêng cho từng thiết bị/trình duyệt, không so sánh giữa các học sinh.</div></footer>
+<section class="container" style="padding-bottom:60px; padding-top:10px;">
+  <h2 style="margin-top:20px;"><i class="fa-solid fa-list-check"></i> Đã ghi nhận hôm nay</h2>
+  <div id="todayList"></div>
+</section>
+
+<footer class="site"><div class="container">Dữ liệu được lưu ngay trên thiết bị của bạn và tự làm mới vào mỗi ngày mới.</div></footer>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
@@ -61,51 +73,163 @@ const CARDS = [
   { id:'tudanhgia', group:'Nhận diện', name:'Thẻ Tự đánh giá', icon:'fa-chart-simple', color:'var(--coral)', time:'2 phút', action:'Chấm mức độ mệt mỏi, tập trung và cảm xúc cuối ngày.', check:'Hôm nay bạn cho mình mấy điểm?' },
 ];
 
-const grid = document.getElementById('cardGrid');
-CARDS.forEach(c => {
-  const div = document.createElement('div');
-  div.className = 'mcard';
-  div.innerHTML = `
-    <div class="icon-badge" style="background:${c.color}"><i class="fa-solid ${c.icon}"></i></div>
-    <div class="grp">${c.group.toUpperCase()}</div>
-    <h3>${c.name}</h3>
-    <div class="time"><i class="fa-regular fa-clock"></i> ${c.time}</div>
-    <p>${c.action}</p>
-    <p style="font-size:0.82rem; color:var(--ink-soft);"><em>Tự hỏi: ${c.check}</em></p>
-    <button class="btn btn-ghost" data-id="${c.id}" style="margin-top:6px;"><i class="fa-solid fa-check"></i> Đánh dấu hoàn thành</button>
-  `;
-  div.querySelector('button').addEventListener('click', () => completeCard(c));
-  grid.appendChild(div);
+/* ===== Lưu trữ theo ngày (tự reset mỗi ngày mới) ===== */
+function todayKey(){
+  const d = new Date();
+  return `mindful_chain_${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function loadToday(){
+  const raw = localStorage.getItem(todayKey());
+  return raw ? JSON.parse(raw) : { committed: [] };
+}
+function saveToday(data){
+  localStorage.setItem(todayKey(), JSON.stringify(data));
+}
+
+/* ===== Rút bài & lật bài ===== */
+const drawBtn = document.getElementById('drawBtn');
+const drawSection = document.getElementById('drawSection');
+const drawGrid = document.getElementById('drawGrid');
+const decisionRow = document.getElementById('decisionRow');
+let drawLocked = false;
+let pickedCard = null;
+
+function shuffle(arr){ return [...arr].sort(() => Math.random() - 0.5); }
+
+drawBtn.addEventListener('click', () => {
+  if (drawLocked) return;
+  const count = window.matchMedia('(max-width: 640px)').matches ? 2 : 5;
+  const picks = shuffle(CARDS).slice(0, count);
+
+  drawGrid.innerHTML = '';
+  decisionRow.style.display = 'none';
+  drawSection.style.display = 'block';
+  pickedCard = null;
+
+  const wrappers = picks.map((card, i) => {
+    const el = document.createElement('div');
+    el.className = 'draw-card';
+    el.innerHTML = `
+      <div class="draw-card-inner">
+        <div class="draw-front"><i class="fa-solid fa-sparkles"></i></div>
+        <div class="draw-back">
+          <div class="icon-badge" style="background:${card.color}"><i class="fa-solid ${card.icon}"></i></div>
+          <div class="grp">${card.group.toUpperCase()}</div>
+          <h4>${card.name}</h4>
+          <p>${card.action}</p>
+          <p class="check-q">${card.check}</p>
+        </div>
+      </div>`;
+    drawGrid.appendChild(el);
+    setTimeout(() => {
+      el.style.animationDelay = (i * 0.12) + 's';
+      el.classList.add('dealt');
+    }, 30);
+    el.addEventListener('click', () => pickCard(card, el, wrappers));
+    return el;
+  });
+
+  drawBtn.disabled = true;
 });
 
-document.getElementById('drawBtn').addEventListener('click', () => {
-  const pick = CARDS[Math.floor(Math.random() * CARDS.length)];
-  alert(`🎴 Thẻ hôm nay: ${pick.name}\n\n${pick.action}\n\nTự hỏi: ${pick.check}`);
+function pickCard(card, el, allWrappers){
+  if (drawLocked) return;
+  drawLocked = true;
+  pickedCard = card;
+
+  allWrappers.forEach(w => { if (w !== el) w.classList.add('discarded'); });
+
+  el.classList.add('flipping');
+  setTimeout(() => {
+    el.classList.remove('flipping');
+    el.classList.add('flipped');
+    decisionRow.style.display = 'flex';
+  }, 800);
+}
+
+document.getElementById('commitBtn').addEventListener('click', () => {
+  if (!pickedCard) return;
+  const data = loadToday();
+  data.committed.push({
+    id: pickedCard.id, name: pickedCard.name, group: pickedCard.group,
+    icon: pickedCard.icon, color: pickedCard.color,
+    action: pickedCard.action, check: pickedCard.check,
+    done: false, ts: Date.now()
+  });
+  saveToday(data);
+  renderTodayList();
+  renderFlame();
+  closeDraw();
 });
 
-async function completeCard(c) {
+document.getElementById('skipBtn').addEventListener('click', closeDraw);
+
+function closeDraw(){
+  drawSection.style.display = 'none';
+  drawGrid.innerHTML = '';
+  decisionRow.style.display = 'none';
+  drawLocked = false;
+  pickedCard = null;
+  drawBtn.disabled = false;
+}
+
+/* ===== Danh sách đã ghi nhận hôm nay + đánh dấu hoàn thành ===== */
+function renderTodayList(){
+  const data = loadToday();
+  const wrap = document.getElementById('todayList');
+  wrap.innerHTML = '';
+
+  if (data.committed.length === 0) {
+    wrap.innerHTML = `<p class="empty-hint"><i class="fa-solid fa-inbox"></i> Chưa có thẻ nào được ghi nhận hôm nay. Rút một thẻ để bắt đầu!</p>`;
+    return;
+  }
+
+  data.committed.forEach((c, idx) => {
+    const row = document.createElement('div');
+    row.className = 'today-item' + (c.done ? ' done' : '');
+    row.innerHTML = `
+      <div class="icon-badge" style="background:${c.color}"><i class="fa-solid ${c.icon}"></i></div>
+      <div class="info">
+        <h4>${c.name}</h4>
+        <span class="grp">${c.group.toUpperCase()}</span>
+      </div>
+      <button class="btn ${c.done ? 'btn-ghost' : 'btn-primary'} check-btn" data-idx="${idx}" ${c.done ? 'disabled' : ''}>
+        <i class="fa-solid ${c.done ? 'fa-circle-check' : 'fa-check'}"></i> ${c.done ? 'Đã hoàn thành' : 'Đánh dấu hoàn thành'}
+      </button>`;
+    if (!c.done) {
+      row.querySelector('.check-btn').addEventListener('click', () => markDone(idx));
+    }
+    wrap.appendChild(row);
+  });
+}
+
+async function markDone(idx){
+  const data = loadToday();
+  if (!data.committed[idx] || data.committed[idx].done) return;
+  data.committed[idx].done = true;
+  saveToday(data);
+  renderTodayList();
+  renderFlame();
   try {
+    const c = data.committed[idx];
     await saveCardCompletion(c.id, c.name, c.group);
-    await refreshChain();
-  } catch (err) {
-    alert('Không lưu được, thử lại nhé: ' + err.message);
-  }
+  } catch (err) { console.error('Không đồng bộ được lên máy chủ:', err); }
 }
 
-async function refreshChain() {
-  const n = await getChainLength();
-  const track = document.getElementById('chainTrack');
-  track.innerHTML = '';
-  const shown = Math.max(n, 10);
-  for (let i = 0; i < shown; i++) {
-    const dot = document.createElement('div');
-    dot.className = 'chain-dot' + (i < n ? ' done' : '');
-    track.appendChild(dot);
-  }
-  document.getElementById('chainCount').textContent = `${n} thẻ đã hoàn thành trong chuỗi của bạn.`;
+/* ===== Ngọn lửa a/b ===== */
+function renderFlame(){
+  const data = loadToday();
+  const a = data.committed.filter(c => c.done).length;
+  const b = data.committed.length;
+  document.getElementById('chainDone').textContent = a;
+  document.getElementById('chainTotal').textContent = b;
+  document.getElementById('chainCount').textContent = b === 0
+    ? 'Rút thẻ để bắt đầu chuỗi hôm nay của bạn.'
+    : (a === b ? 'Bạn đã hoàn thành tất cả thẻ đã chọn hôm nay! 🎉' : `Còn ${b - a} thẻ đã chọn chưa hoàn thành.`);
 }
 
-refreshChain();
+renderTodayList();
+renderFlame();
 </script>
 </body>
 </html>
