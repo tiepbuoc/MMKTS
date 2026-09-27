@@ -6,72 +6,256 @@
 <title>Cộng tác viên — Hành trình công dân số</title>
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+  /* ===== Trang Cộng tác viên — layout & style riêng ===== */
+  html, body{ height:100%; }
+  body{ overflow-x:hidden; }
+
+  /* ----- Màn hình khóa mã truy cập ----- */
+  #lockScreen{
+    position:fixed; inset:0; z-index:500; display:flex; align-items:center; justify-content:center;
+    background: linear-gradient(160deg, var(--primary-dark), var(--primary) 60%, var(--purple));
+    padding:20px;
+  }
+  #lockScreen.hidden{ display:none; }
+  .lock-card{
+    background:var(--surface); border-radius:var(--radius-lg); box-shadow:0 20px 60px rgba(0,0,0,0.25);
+    padding:36px 30px; width:100%; max-width:360px; text-align:center;
+  }
+  .lock-card .lock-icon{
+    width:64px; height:64px; border-radius:50%; background:var(--primary-soft); color:var(--primary-dark);
+    display:flex; align-items:center; justify-content:center; font-size:1.6rem; margin:0 auto 16px;
+  }
+  .lock-card h2{ margin-bottom:6px; }
+  .lock-card p{ color:var(--ink-soft); font-size:0.88rem; margin-bottom:20px; max-width:none; }
+  .lock-card input{
+    width:100%; text-align:center; letter-spacing:2px; font-size:1.1rem; padding:12px 14px;
+    border-radius:var(--radius-md); border:2px solid var(--line); margin-bottom:12px; font-family:inherit;
+  }
+  .lock-card input:focus{ outline:none; border-color:var(--primary); }
+  .lock-card .btn{ width:100%; justify-content:center; }
+  .lock-error{ color:var(--risk-high); font-size:0.82rem; min-height:1.2em; margin-bottom:6px; font-weight:600; }
+  .lock-card.shake{ animation: shake 0.4s; }
+  @keyframes shake{ 10%,90%{transform:translateX(-2px);} 20%,80%{transform:translateX(4px);} 30%,50%,70%{transform:translateX(-8px);} 40%,60%{transform:translateX(8px);} }
+
+  /* ----- Khung ứng dụng chính ----- */
+  #ctvApp{ display:none; min-height:100vh; flex-direction:column; }
+  #ctvApp.ready{ display:flex; }
+
+  .ctv-topbar{
+    background:var(--surface); box-shadow:var(--shadow-sm); padding:14px 20px; display:flex;
+    align-items:center; gap:12px; position:sticky; top:0; z-index:50;
+  }
+  .ctv-topbar .brand-icon{
+    width:38px; height:38px; border-radius:50%; background:var(--primary); color:#fff;
+    display:flex; align-items:center; justify-content:center; font-size:1rem; flex-shrink:0;
+  }
+  .ctv-topbar .txt{ flex:1; min-width:0; }
+  .ctv-topbar .txt h1{ font-size:1.05rem; margin:0; color:var(--ink); }
+  .ctv-topbar .txt span{ font-size:0.76rem; color:var(--ink-soft); }
+  .ctv-topbar .icon-btn{
+    background:var(--bg); border:none; width:38px; height:38px; border-radius:50%; color:var(--ink-soft);
+    display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0;
+  }
+  .ctv-topbar .icon-btn:hover{ background:var(--coral-soft); color:var(--coral); }
+
+  .ctv-layout{ flex:1; display:grid; grid-template-columns: 340px 1fr; gap:0; max-width:1280px; margin:0 auto; width:100%; min-height:0; }
+
+  /* ----- Danh sách hội thoại ----- */
+  .ctv-list-pane{ border-right:1px solid var(--line); display:flex; flex-direction:column; min-height:0; background:var(--surface); }
+  .ctv-list-head{ padding:16px 18px 10px; }
+  .ctv-list-head h3{ font-size:0.95rem; margin:0 0 2px; }
+  .ctv-list-head .count{ font-size:0.78rem; color:var(--ink-soft); }
+  .ctv-list-scroll{ flex:1; overflow-y:auto; padding:6px 8px 16px; }
+
+  .conv-item{
+    display:flex; align-items:center; gap:12px; padding:12px 10px; border-radius:var(--radius-md);
+    cursor:pointer; margin-bottom:4px;
+  }
+  .conv-item:hover{ background:var(--bg); }
+  .conv-item.active{ background:var(--primary-soft); }
+  .conv-item .av{
+    width:42px; height:42px; border-radius:50%; background:var(--purple); color:#fff; font-weight:700;
+    display:flex; align-items:center; justify-content:center; font-size:0.85rem; flex-shrink:0;
+  }
+  .conv-item .info{ flex:1; min-width:0; }
+  .conv-item .info .name-row{ display:flex; align-items:center; gap:6px; }
+  .conv-item .info .name{ font-weight:700; font-size:0.88rem; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .conv-item .info .prev{ font-size:0.78rem; color:var(--ink-soft); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:2px; }
+  .conv-item .meta{ display:flex; flex-direction:column; align-items:flex-end; gap:6px; flex-shrink:0; }
+  .conv-item .time{ font-size:0.68rem; color:var(--ink-soft); white-space:nowrap; }
+  .conv-item .del-btn{ background:none; border:none; color:var(--ink-soft); cursor:pointer; padding:5px; border-radius:50%; opacity:0.6; }
+  .conv-item .del-btn:hover{ opacity:1; color:var(--risk-high); background:var(--coral-soft); }
+  .conv-badge{ font-size:0.64rem; font-weight:700; padding:2px 8px; border-radius:var(--radius-pill); background:var(--line); color:var(--ink-soft); white-space:nowrap; }
+  .conv-badge.active{ background:var(--primary-soft); color:var(--primary-dark); }
+  .ctv-empty-hint{ text-align:center; color:var(--ink-soft); padding:40px 16px; font-size:0.9rem; }
+
+  /* ----- Khung chi tiết ----- */
+  .ctv-detail-pane{ display:flex; flex-direction:column; min-height:0; background:var(--bg); }
+  .ctv-detail-placeholder{
+    flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    color:var(--ink-soft); text-align:center; padding:40px 20px; gap:10px;
+  }
+  .ctv-detail-placeholder i{ font-size:2.4rem; opacity:0.35; }
+
+  .ctv-detail-head{
+    display:none; align-items:center; gap:10px; padding:12px 16px; background:var(--surface);
+    border-bottom:1px solid var(--line); flex-shrink:0;
+  }
+  .ctv-back-btn{
+    background:var(--bg); border:none; width:36px; height:36px; border-radius:50%; color:var(--primary-dark);
+    display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0;
+  }
+  .ctv-detail-head .who{ font-weight:700; font-size:0.92rem; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+  .ctv-detail-scroll{ flex:1; overflow-y:auto; padding:16px; min-height:0; }
+
+  .survey-panel{ background:var(--surface); border-radius:var(--radius-lg); box-shadow:var(--shadow-sm); padding:16px 18px; margin-bottom:14px; font-size:0.88rem; }
+  .survey-panel summary{ cursor:pointer; font-weight:700; display:flex; align-items:center; gap:8px; list-style:none; }
+  .survey-panel summary::-webkit-details-marker{ display:none; }
+  .survey-panel summary .chev{ margin-left:auto; transition:transform .2s; color:var(--ink-soft); }
+  .survey-panel[open] summary .chev{ transform:rotate(180deg); }
+  .survey-panel dl{ display:grid; grid-template-columns: auto 1fr; gap:7px 14px; margin:14px 0 0; }
+  .survey-panel dt{ color:var(--ink-soft); font-weight:600; }
+  .survey-panel dd{ margin:0; }
+
+  .ctv-chat-card{ background:var(--surface); border-radius:var(--radius-lg); box-shadow:var(--shadow-sm); overflow:hidden; display:flex; flex-direction:column; }
+  #ctvChat{ min-height:280px; max-height:52vh; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:10px; }
+  #ctvChat .msg.ctv{ align-self:flex-start; background:#fff; box-shadow:var(--shadow-sm); border-bottom-left-radius:4px; }
+  .ctv-input-row{ display:flex; gap:10px; padding:14px; border-top:1px solid var(--line); background:#fff; flex-shrink:0; }
+  .ctv-input-row textarea{ margin:0; min-height:44px; max-height:120px; flex:1; border-radius:var(--radius-md); resize:none; }
+
+  /* ----- Responsive: điện thoại — danh sách và chi tiết chuyển màn hình toàn phần ----- */
+  @media (max-width: 860px){
+    .ctv-layout{ grid-template-columns: 1fr; }
+    .ctv-list-pane{ border-right:none; }
+    .ctv-detail-head{ display:flex; }
+    #ctvApp:not(.detail-active) .ctv-detail-pane{ display:none; }
+    #ctvApp.detail-active .ctv-list-pane{ display:none; }
+    #ctvChat{ max-height:none; flex:1; }
+  }
+  @media (min-width: 861px){
+    .ctv-back-btn{ display:none; }
+  }
+</style>
 </head>
 <body>
 
-<header class="site">
-  <div class="nav-row">
-    <a class="brand" href="index.html"><i class="fa-solid fa-seedling"></i> Hành trình công dân số</a>
-    <button class="nav-toggle" type="button" id="navToggleBtn" aria-label="Mở menu"><i class="fa-solid fa-bars"></i></button>
-    <ul class="nav-links" id="navLinksEl">
-      <li><a href="index.html"><i class="fa-solid fa-house"></i> Trang chủ</a></li>
-    </ul>
+<!-- ===== Màn hình yêu cầu mã truy cập ===== -->
+<div id="lockScreen">
+  <div class="lock-card" id="lockCard">
+    <div class="lock-icon"><i class="fa-solid fa-user-shield"></i></div>
+    <h2>Khu vực Cộng tác viên</h2>
+    <p>Vui lòng nhập mã truy cập nội bộ để tiếp tục.</p>
+    <div class="lock-error" id="lockError">&nbsp;</div>
+    <input type="password" id="lockInput" placeholder="Nhập mã truy cập" autocomplete="off">
+    <button class="btn btn-primary" id="lockSubmit"><i class="fa-solid fa-right-to-bracket"></i> Vào trang</button>
   </div>
-</header>
-<script>
-document.getElementById('navToggleBtn').addEventListener('click', () => {
-  document.getElementById('navLinksEl').classList.toggle('open');
-});
-</script>
+</div>
 
-<section class="hero" style="padding-bottom:16px;">
-  <div class="container">
-    <div class="hidden-page-badge"><i class="fa-solid fa-user-shield"></i> Trang nội bộ — chỉ dùng bằng link trực tiếp, không hiển thị trên menu</div>
-    <h1>Bảng điều khiển Cộng tác viên</h1>
-    <p class="lede">Xem và trả lời các cuộc trò chuyện ẩn danh từ Emo-Connect, sắp xếp theo tin nhắn gần nhất.</p>
+<!-- ===== Ứng dụng Cộng tác viên ===== -->
+<div id="ctvApp">
+  <div class="ctv-topbar">
+    <div class="brand-icon"><i class="fa-solid fa-user-shield"></i></div>
+    <div class="txt">
+      <h1>Bảng điều khiển Cộng tác viên</h1>
+      <span>Emo-Connect · trang nội bộ</span>
+    </div>
+    <button class="icon-btn" id="logoutBtn" title="Thoát"><i class="fa-solid fa-right-from-bracket"></i></button>
   </div>
-</section>
 
-<section class="container" style="padding-bottom:60px;">
-  <div class="split-layout">
-    <button class="conv-list-toggle" id="convListToggleBtn">
-      <span><i class="fa-solid fa-list"></i> Danh sách hội thoại</span>
-      <i class="fa-solid fa-chevron-down"></i>
-    </button>
-    <div class="conv-list-backdrop" id="convListBackdrop"></div>
-    <div class="conv-list" id="convList">
-      <p style="padding:20px; text-align:center; color:var(--ink-soft);"><i class="fa-solid fa-spinner fa-spin"></i> Đang tải danh sách...</p>
+  <div class="ctv-layout">
+    <!-- Danh sách hội thoại -->
+    <div class="ctv-list-pane">
+      <div class="ctv-list-head">
+        <h3><i class="fa-solid fa-comments"></i> Hội thoại</h3>
+        <div class="count" id="convCountText">Đang tải...</div>
+      </div>
+      <div class="ctv-list-scroll" id="convList"></div>
     </div>
 
-    <div id="convDetail">
-      <div class="card" style="text-align:center; color:var(--ink-soft); padding:50px 20px;">
-        <i class="fa-solid fa-comments" style="font-size:2rem; margin-bottom:10px; opacity:0.5;"></i>
-        <p style="margin:0;">Chọn một cuộc trò chuyện ở danh sách bên trái để bắt đầu.</p>
+    <!-- Chi tiết hội thoại -->
+    <div class="ctv-detail-pane">
+      <div class="ctv-detail-head">
+        <button class="ctv-back-btn" id="backBtn"><i class="fa-solid fa-arrow-left"></i></button>
+        <div class="who" id="detailWhoText">Chọn một hội thoại</div>
+      </div>
+      <div class="ctv-detail-scroll" id="convDetail">
+        <div class="ctv-detail-placeholder">
+          <i class="fa-solid fa-comments"></i>
+          <p style="margin:0;">Chọn một cuộc trò chuyện ở danh sách bên trái để bắt đầu.</p>
+        </div>
       </div>
     </div>
   </div>
-</section>
-
-<footer class="site"><div class="container">Trang dành cho cộng tác viên hỗ trợ tâm lý học đường.</div></footer>
+</div>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="firebase-init.js"></script>
 <script>
+/* =========================================================
+   MÃ TRUY CẬP TĨNH (chỉ để kiểm thử — không phải bảo mật thật)
+========================================================= */
+const CTV_PASSCODE = 'nhat1234';
+const SESSION_KEY = 'ctv_authed';
+
+const lockScreen = document.getElementById('lockScreen');
+const lockCard = document.getElementById('lockCard');
+const lockInput = document.getElementById('lockInput');
+const lockError = document.getElementById('lockError');
+const ctvApp = document.getElementById('ctvApp');
+
+function tryUnlock(){
+  const value = lockInput.value.trim();
+  if (value === CTV_PASSCODE) {
+    sessionStorage.setItem(SESSION_KEY, '1');
+    unlockApp();
+  } else {
+    lockError.textContent = 'Sai mã truy cập, vui lòng thử lại.';
+    lockCard.classList.remove('shake'); void lockCard.offsetWidth; lockCard.classList.add('shake');
+    lockInput.value = '';
+    lockInput.focus();
+  }
+}
+function unlockApp(){
+  lockScreen.classList.add('hidden');
+  ctvApp.classList.add('ready');
+  initCtvDashboard();
+}
+document.getElementById('lockSubmit').addEventListener('click', tryUnlock);
+lockInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') tryUnlock(); });
+document.getElementById('logoutBtn').addEventListener('click', () => {
+  sessionStorage.removeItem(SESSION_KEY);
+  location.reload();
+});
+
+if (sessionStorage.getItem(SESSION_KEY) === '1') {
+  unlockApp();
+} else {
+  lockInput.focus();
+}
+
+/* =========================================================
+   BẢNG ĐIỀU KHIỂN CỘNG TÁC VIÊN
+========================================================= */
+let ctvInitDone = false;
 let allChats = [];
 let activeConvId = null;
 let unsubActiveMsgs = null;
 
-const convListEl = document.getElementById('convList');
-const convListBackdrop = document.getElementById('convListBackdrop');
-document.getElementById('convListToggleBtn').addEventListener('click', () => {
-  convListEl.classList.add('open');
-  convListBackdrop.classList.add('open');
-});
-convListBackdrop.addEventListener('click', closeConvList);
-function closeConvList(){
-  convListEl.classList.remove('open');
-  convListBackdrop.classList.remove('open');
+function initCtvDashboard(){
+  if (ctvInitDone) return;
+  ctvInitDone = true;
+
+  listenAllEmoChats(chats => {
+    allChats = chats;
+    renderConvList();
+    if (activeConvId) {
+      const stillThere = chats.find(c => c.id === activeConvId);
+      if (!stillThere) { activeConvId = null; renderEmptyDetail(); }
+    }
+  });
 }
 
 function escapeHtml(str){
@@ -83,19 +267,13 @@ function timeAgo(ts){
   return d.toLocaleString('vi-VN', { hour:'2-digit', minute:'2-digit', day:'2-digit', month:'2-digit' });
 }
 
-listenAllEmoChats(chats => {
-  allChats = chats;
-  renderConvList();
-  if (activeConvId) {
-    const stillThere = chats.find(c => c.id === activeConvId);
-    if (!stillThere) { activeConvId = null; renderEmptyDetail(); }
-  }
-});
-
 function renderConvList(){
   const wrap = document.getElementById('convList');
+  const countEl = document.getElementById('convCountText');
+  countEl.textContent = allChats.length ? `${allChats.length} cuộc trò chuyện` : 'Chưa có hội thoại';
+
   if (allChats.length === 0) {
-    wrap.innerHTML = `<p style="padding:20px; text-align:center; color:var(--ink-soft);">Chưa có cuộc trò chuyện nào.</p>`;
+    wrap.innerHTML = `<div class="ctv-empty-hint"><i class="fa-solid fa-inbox" style="font-size:1.8rem; opacity:0.4;"></i><p>Chưa có cuộc trò chuyện nào.</p></div>`;
     return;
   }
   wrap.innerHTML = '';
@@ -106,36 +284,49 @@ function renderConvList(){
     el.innerHTML = `
       <div class="av">${initials}</div>
       <div class="info">
-        <div class="name">Học sinh ${escapeHtml((c.anonId||'').slice(-6))}
-          <span class="conv-badge ${c.status === 'active' ? 'active' : ''}">${c.status === 'active' ? 'Đang mở' : 'Đã kết thúc'}</span>
+        <div class="name-row">
+          <span class="name">Học sinh ${escapeHtml((c.anonId||'').slice(-6))}</span>
         </div>
-        <div class="prev">${escapeHtml(c.lastMessagePreview || 'Chưa có tin nhắn')} · ${timeAgo(c.lastMessageAt)}</div>
+        <div class="prev">${escapeHtml(c.lastMessagePreview || 'Chưa có tin nhắn')}</div>
       </div>
-      <button class="del-btn" title="Ẩn cuộc trò chuyện này"><i class="fa-solid fa-trash"></i></button>`;
+      <div class="meta">
+        <span class="conv-badge ${c.status === 'active' ? 'active' : ''}">${c.status === 'active' ? 'Đang mở' : 'Đã kết thúc'}</span>
+        <span class="time">${timeAgo(c.lastMessageAt)}</span>
+        <button class="del-btn" title="Ẩn cuộc trò chuyện này"><i class="fa-solid fa-trash"></i></button>
+      </div>`;
     el.querySelector('.info').addEventListener('click', () => openConv(c));
     el.querySelector('.av').addEventListener('click', () => openConv(c));
     el.querySelector('.del-btn').addEventListener('click', async (e) => {
       e.stopPropagation();
       if (!confirm('Ẩn cuộc trò chuyện này khỏi danh sách?')) return;
       await ctvDeleteChat(c.id);
-      if (activeConvId === c.id) { activeConvId = null; renderEmptyDetail(); }
+      if (activeConvId === c.id) { activeConvId = null; renderEmptyDetail(); ctvApp.classList.remove('detail-active'); }
     });
     wrap.appendChild(el);
   });
 }
 
 function renderEmptyDetail(){
+  document.getElementById('detailWhoText').textContent = 'Chọn một hội thoại';
   document.getElementById('convDetail').innerHTML = `
-    <div class="card" style="text-align:center; color:var(--ink-soft); padding:50px 20px;">
-      <i class="fa-solid fa-comments" style="font-size:2rem; margin-bottom:10px; opacity:0.5;"></i>
+    <div class="ctv-detail-placeholder">
+      <i class="fa-solid fa-comments"></i>
       <p style="margin:0;">Chọn một cuộc trò chuyện ở danh sách bên trái để bắt đầu.</p>
     </div>`;
 }
 
+document.getElementById('backBtn').addEventListener('click', () => {
+  ctvApp.classList.remove('detail-active');
+  if (unsubActiveMsgs) { unsubActiveMsgs(); unsubActiveMsgs = null; }
+  activeConvId = null;
+  renderConvList();
+});
+
 async function openConv(c){
   activeConvId = c.id;
   renderConvList();
-  closeConvList();
+  ctvApp.classList.add('detail-active');
+  document.getElementById('detailWhoText').textContent = `Học sinh ${(c.anonId||'').slice(-6)}`;
   if (unsubActiveMsgs) unsubActiveMsgs();
 
   let surveyHtml = `<p style="color:var(--ink-soft); margin:0;">Không có dữ liệu khảo sát liên kết.</p>`;
@@ -160,17 +351,13 @@ async function openConv(c){
   } catch(e){ surveyHtml = `<p style="color:var(--risk-high);margin:0;">Lỗi tải khảo sát: ${e.message}</p>`; }
 
   document.getElementById('convDetail').innerHTML = `
-    <div class="survey-panel">
-      <strong style="display:flex; align-items:center; gap:8px; margin-bottom:10px;"><i class="fa-solid fa-clipboard-list"></i> Dữ liệu khảo sát Emo-Connect</strong>
+    <details class="survey-panel">
+      <summary><i class="fa-solid fa-clipboard-list"></i> Dữ liệu khảo sát Emo-Connect <i class="fa-solid fa-chevron-down chev"></i></summary>
       ${surveyHtml}
-    </div>
-    <div class="ctv-chat-wrap">
-      <div class="chat-header">
-        <div class="who"><i class="fa-solid fa-user avatar"></i> Học sinh ${escapeHtml((c.anonId||'').slice(-6))}</div>
-        <span class="conv-badge ${c.status === 'active' ? 'active' : ''}">${c.status === 'active' ? 'Đang mở' : 'Đã kết thúc'}</span>
-      </div>
+    </details>
+    <div class="ctv-chat-card">
       <div id="ctvChat"></div>
-      <div class="chat-input-row">
+      <div class="ctv-input-row">
         <textarea id="ctvChatInput" placeholder="Nhập phản hồi cho học sinh..." rows="1" ${c.status !== 'active' ? 'disabled' : ''}></textarea>
         <button id="ctvChatSend" class="btn btn-primary btn-round" ${c.status !== 'active' ? 'disabled' : ''}><i class="fa-solid fa-paper-plane"></i></button>
       </div>
@@ -179,6 +366,9 @@ async function openConv(c){
   const chatEl = document.getElementById('ctvChat');
   unsubActiveMsgs = listenEmoChatMessages(c.id, msgs => {
     chatEl.innerHTML = '';
+    if (msgs.length === 0) {
+      chatEl.innerHTML = `<p style="text-align:center;color:var(--ink-soft);font-size:0.86rem;">Chưa có tin nhắn nào trong hội thoại này.</p>`;
+    }
     msgs.forEach(m => {
       const div = document.createElement('div');
       div.className = 'msg ' + (m.sender === 'ctv' ? 'user' : 'ctv');

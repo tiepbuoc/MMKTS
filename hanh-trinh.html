@@ -46,7 +46,7 @@ document.getElementById('navToggleBtn').addEventListener('click', () => {
 <!-- ===== CHẶNG 1 — KIẾN THỨC (nội dung tải từ Firestore, quản lý ở trang Admin) ===== -->
 <section class="container stage" id="stage1" style="padding-bottom:40px;">
 
-  <div id="kbContainer"><p style="color:var(--ink-soft); text-align:center;"><i class="fa-solid fa-spinner fa-spin"></i> Đang tải nội dung...</p></div>
+  <div id="kbContainer"></div>
 
   <div class="wizard-nav" style="justify-content:flex-end;">
     <button class="btn btn-primary" id="toStage2"><i class="fa-solid fa-arrow-right"></i> Tiếp tục tới bài sàng lọc</button>
@@ -125,10 +125,9 @@ document.getElementById('navToggleBtn').addEventListener('click', () => {
 <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
 <script>
 /* =========================================================
-   CHẶNG 1 — KIẾN THỨC: tải từ Firestore (knowledgeSections), có nội dung mặc định
-   dự phòng nếu admin chưa nhập gì, để trang không bao giờ trống.
+   CHẶNG 1 — KIẾN THỨC: nội dung cố định, viết trực tiếp trong mã nguồn.
 ========================================================= */
-const DEFAULT_KB_SECTIONS = [
+const KB_SECTIONS = [
   { icon:'fa-circle-info', iconBg:'var(--blue)', title:'Mệt mỏi kỹ thuật số là gì?', type:'text',
     bodyHtml:'<p>Mệt mỏi kỹ thuật số (digital fatigue) là trạng thái kiệt sức về thể chất, tinh thần và cảm xúc xảy ra khi một người tiếp xúc với thiết bị điện tử quá nhiều, quá liên tục, hoặc không đúng cách trong thời gian dài. Đây không phải là một "căn bệnh", mà là phản ứng tự nhiên của cơ thể và não bộ khi phải xử lý quá nhiều thông tin, ánh sáng xanh và kích thích số trong một khoảng thời gian ngắn.</p><p>Khác với mệt mỏi thể chất thông thường, mệt mỏi kỹ thuật số thường âm thầm tích tụ: học sinh có thể không nhận ra mình đang mệt cho đến khi các dấu hiệu trở nên rõ rệt — mất ngủ, khó tập trung, hoặc cảm thấy chán nản không rõ lý do.</p><div class="note"><i class="fa-solid fa-lightbulb"></i><span>Bản thân công nghệ không xấu. Vấn đề nằm ở <strong>cách</strong> và <strong>thời lượng</strong> chúng ta sử dụng nó.</span></div>', images:[], cards:[] },
   { icon:'fa-triangle-exclamation', iconBg:'var(--coral)', title:'Dấu hiệu nhận biết', type:'text-cards',
@@ -157,13 +156,9 @@ const DEFAULT_KB_SECTIONS = [
     bodyHtml:'<p>Hãy chủ động tìm đến giáo viên tư vấn học đường, chuyên gia tâm lý hoặc người lớn tin tưởng nếu bạn nhận thấy:</p><ul><li>Mất ngủ hoặc lo âu kéo dài trên 2 tuần và không cải thiện.</li><li>Không thể tự kiểm soát thời gian sử dụng thiết bị dù đã cố gắng nhiều lần.</li><li>Việc sử dụng thiết bị ảnh hưởng nghiêm trọng đến học tập, các mối quan hệ hoặc sức khỏe.</li><li>Cảm giác buồn bã, trống rỗng kéo dài, hoặc có ý nghĩ tiêu cực về bản thân.</li></ul><p style="margin-bottom:0;">Bạn cũng có thể dùng mục <a href="emo-connect.html">Emo-Connect</a> để chia sẻ ẩn danh bất cứ lúc nào.</p>', images:[], cards:[] }
 ];
 
-async function renderKnowledgeSections(){
+function renderKnowledgeSections(){
   const wrap = document.getElementById('kbContainer');
-  let sections = [];
-  try {
-    if (typeof getKnowledgeSections === 'function') sections = await getKnowledgeSections();
-  } catch(e){ console.error('Không tải được kiến thức từ máy chủ:', e); }
-  if (!sections || sections.length === 0) sections = DEFAULT_KB_SECTIONS;
+  const sections = KB_SECTIONS;
 
   wrap.innerHTML = '';
   sections.forEach((sec, idx) => {

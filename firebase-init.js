@@ -67,30 +67,6 @@ async function getDistinctCompletedCardIds() {
 }
 
 /* =========================================================
-   KIẾN THỨC (mục nội dung Hành trình công dân số) — quản lý qua trang Admin
-========================================================= */
-async function getKnowledgeSections() {
-  const snap = await db.collection('knowledgeSections').orderBy('order', 'asc').get();
-  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
-}
-async function addKnowledgeSection(data) {
-  const snap = await db.collection('knowledgeSections').orderBy('order', 'desc').limit(1).get();
-  const nextOrder = snap.empty ? 1 : (snap.docs[0].data().order || 0) + 1;
-  return db.collection('knowledgeSections').add({
-    ...data, order: nextOrder, createdAt: firebase.firestore.FieldValue.serverTimestamp()
-  });
-}
-async function updateKnowledgeSection(id, data) {
-  return db.collection('knowledgeSections').doc(id).update(data);
-}
-async function deleteKnowledgeSection(id) {
-  return db.collection('knowledgeSections').doc(id).delete();
-}
-async function reorderKnowledgeSection(id, newOrder) {
-  return db.collection('knowledgeSections').doc(id).update({ order: newOrder });
-}
-
-/* =========================================================
    EMO-CONNECT — trò chuyện trực tiếp ẩn danh với cộng tác viên
    Mỗi trình duyệt chỉ biết ID cuộc trò chuyện của chính mình (lưu localStorage),
    nên chỉ máy đó mới xem/gửi được vào đúng cuộc trò chuyện đó.
