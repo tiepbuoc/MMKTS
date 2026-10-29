@@ -121,7 +121,9 @@ document.getElementById('navToggleBtn').addEventListener('click', () => {
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="firebase-init.js"></script>
+<script src="gateway.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
 <script>
 /* =========================================================
@@ -210,10 +212,7 @@ document.getElementById('lightbox').addEventListener('click', (e) => { if (e.tar
 
 renderKnowledgeSections();
 
-// ===== Cấu hình chatbot =====
-const API_URL = 'https://api.shopaikey.com/v1/chat/completions';
-const MODEL = 'gpt-4.1-mini-2025-04-14';
-const API_KEY = 'sk-4150297863e3eee405805e8609648e6c5cebb1b502ffb46e';
+// ===== Chatbot chạy qua MMKTS Gateway (n8n) — xem gateway.js. Không còn API key ở phía web. =====
 
 /* =========================================================
    ĐIỀU HƯỚNG CHẶNG (STAGES) — lưu tiến độ vào localStorage
@@ -230,7 +229,7 @@ function setCurStage(n){
   document.getElementById('stage' + n).classList.add('active');
   renderStageNav();
   window.scrollTo({top: document.getElementById('stageNav').offsetTop - 90, behavior:'smooth'});
-  if (n === 3) initChatStage();
+  if (n === 3) { initChatStage(); MMKTSGateway.prefetchToken(); }
 }
 
 function renderStageNav(){
@@ -363,6 +362,7 @@ const sendBtn = document.getElementById('sendBtn');
 const LS_CHAT = 'journey_chat_history';
 let chatStarted = false;
 
+// Dữ liệu học sinh gửi kèm để server cá nhân hóa phản hồi (prompt hệ thống do n8n quyết định)
 function buildContextPrimer(){
   const kbDone = localStorage.getItem('journey_kb_done') === 'true';
   const quizRaw = localStorage.getItem('journey_quiz');
@@ -373,10 +373,7 @@ function buildContextPrimer(){
     quizText = `đã làm bài sàng lọc, điểm trung bình ${q.avg.toFixed(2)}/5, mức độ "${q.level}". `
       + (concerns.length ? `Các biểu hiện nổi bật nhất: ${concerns.join('; ')}.` : 'Không có biểu hiện nào nổi bật rõ rệt.');
   }
-  return `Bạn là trợ lý "Hành trình công dân số", hỗ trợ học sinh hiểu về mệt mỏi kỹ thuật số. `
-    + `Thông tin về học sinh này: đã ${kbDone ? '' : 'CHƯA '}đọc xong phần kiến thức nền; ${quizText} `
-    + `Hãy dùng thông tin này để cá nhân hóa phản hồi (nếu mức độ Cao, thể hiện sự quan tâm nhiều hơn; nếu có biểu hiện cụ thể, gợi ý thẻ Mindful Chain phù hợp: Thẻ Dừng, Thẻ Hỏi, Thẻ Một việc, Thẻ Tắt nhiễu, Thẻ Nghỉ mắt, Thẻ Vận động, Thẻ Không màn hình, Thẻ Giờ ngủ, Thẻ Tự đánh giá). `
-    + `Trả lời ngắn gọn, thân thiện, đặt câu hỏi gợi mở. Không chẩn đoán y tế/tâm lý, không thay thế chuyên gia.`;
+  return `Học sinh này đã ${kbDone ? '' : 'CHƯA '}đọc xong phần kiến thức nền; ${quizText}`;
 }
 
 function loadChatHistory(){
@@ -451,22 +448,19 @@ async function sendMessage(){
   sendBtn.disabled = true;
   const thinking = renderMsg('bot', 'Đang trả lời...');
 
-  const apiMessages = [{ role:'system', content: buildContextPrimer() }, ...history];
-
   try {
-    const res = await fetch(API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + API_KEY },
-      body: JSON.stringify({ model: MODEL, messages: apiMessages })
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    const reply = data.choices?.[0]?.message?.content || '(Không có phản hồi)';
+    // history gửi lên = các lượt TRƯỚC câu vừa nhập (câu mới gửi riêng ở `message`)
+    const reply = (await MMKTSGateway.askGateway({
+      task: 'chat',
+      message: text,
+      history: history.slice(0, -1),
+      context: buildContextPrimer()
+    })) || '(Không có phản hồi)';
     updateMsgContent(thinking, 'bot', reply);
     history.push({ role:'assistant', content: reply });
     saveChatHistory(history);
   } catch (err) {
-    updateMsgContent(thinking, 'bot', 'Lỗi khi kết nối tới trợ lý: ' + err.message);
+    updateMsgContent(thinking, 'bot', MMKTSGateway.friendlyError(err));
   } finally {
     sendBtn.disabled = false;
   }

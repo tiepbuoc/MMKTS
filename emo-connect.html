@@ -161,11 +161,11 @@ document.getElementById('navToggleBtn').addEventListener('click', () => {
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="firebase-init.js"></script>
+<script src="gateway.js"></script>
 <script>
-const API_URL = 'https://api.shopaikey.com/v1/chat/completions';
-const MODEL = 'gpt-5.4-nano';
-const API_KEY = 'sk-4150297863e3eee405805e8609648e6c5cebb1b502ffb46e';
+// AI chạy qua MMKTS Gateway (n8n) — xem gateway.js. Không còn API key ở phía web.
 
 const EMOTIONS = [
   { id:'buon', label:'Buồn', icon:'fa-face-sad-tear', bg:'var(--blue-soft)', fg:'var(--blue)' },
@@ -291,21 +291,11 @@ document.getElementById('wizNext').addEventListener('click', () => {
 async function classifyMessage(text){
   const categories = ['mệt mỏi','căng thẳng','mất tập trung','áp lực học tập','xung đột gia đình','khó kiểm soát thiết bị','nhu cầu tư vấn','khác'];
   try {
-    const res = await fetch(API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + API_KEY },
-      body: JSON.stringify({
-        model: MODEL,
-        messages: [
-          { role:'system', content: `Phân loại nội dung học sinh chia sẻ vào đúng 1 nhãn trong danh sách: ${categories.join(', ')}. Chỉ trả về đúng tên nhãn, không giải thích thêm.` },
-          { role:'user', content: text }
-        ]
-      })
-    });
-    const data = await res.json();
-    const label = data.choices?.[0]?.message?.content?.trim().toLowerCase();
+    // prompt + danh sách nhãn do server (n8n) quyết định; web chỉ gửi nội dung cần phân loại
+    const reply = await MMKTSGateway.askGateway({ task: 'classify', message: text });
+    const label = reply.trim().toLowerCase();
     return categories.find(c => label && label.includes(c)) || 'khác';
-  } catch(e){ return 'chưa phân loại'; }
+  } catch(e){ console.warn('Phân loại thất bại:', e.code || e); return 'chưa phân loại'; }
 }
 
 document.getElementById('submitBtn').addEventListener('click', async () => {
